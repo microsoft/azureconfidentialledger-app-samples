@@ -19,7 +19,7 @@ build: ## 🔨 Build the Banking Application
 
 test: build ## 🧪 Test the Banking Application in ACL
 	@echo -e "\e[34m$@\e[0m" || true
-	@. ../scripts/test_acl.sh --subscription "027da7f8-2fc6-46d4-9be9-560706b60fec" --tenant "72f988bf-86f1-41af-91ab-2d7cd011db47" --app-dir ${CURDIR}
+	@. ../scripts/test_acl.sh --subscription "<subscription id>" --tenant "<tenant id>" --app-dir ${CURDIR}
 
 clean: ## 🧹 Clean the working folders created during build
 	@rm -rf dist
