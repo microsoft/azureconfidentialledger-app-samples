@@ -1,10 +1,14 @@
 # Banking application
 
-This is a sample application of a bank.
+This is a sample application of a bank. It uses the following features available in Azure Confidential Ledger to showcase a widely used banking scenario.
+
+    - Custom roles
+    - Custom actions and RBAC.
+    - Multiple Authentication schemes.
 
 ## Use case
 
-A bank system that can be run by multiple users and roles.
+A bank system that can be run by multiple users with different roles.
 
 ## What the application does
 
@@ -31,14 +35,14 @@ This application provides a REST API with the following endpoints:
 
 ### Scenario in the demo
 
-In this scenario, the bank consortium has 3 banks as CCF members.
+In this scenario, the bank has 2 employees with different roles. They are 'manager' and 'teller'.
 Scenario is the following:
 
-1. Banks add 2 users (user0, user1) using CCF's governance mechanism (See [The CCF document](https://microsoft.github.io/CCF/main/governance/open_network.html#adding-users) for the details).
-2. A bank creates an account for each user.
-3. A bank deposit 100 to the user0's account
-4. user0 transfers 40 to the user1's account.
-5. user0 and user1 check their balance. The result should be 60 and 40 respectively.
+1. Manager adds 2 accounts, namely account1 and account2.
+2. Manager deposits 100 into account1.
+3. Teller transfers 40 into account2.
+4. Manager (or teller) checks the balance in account1. It should be 60.
+5. Teller (or manager) checks the balance in account2. It should be 40.
 
 ```mermaid
 sequenceDiagram

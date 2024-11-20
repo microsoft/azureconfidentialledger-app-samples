@@ -1,6 +1,16 @@
-# Azure Confidential Ledger App Samples [![Open in VSCode](https://img.shields.io/static/v1?label=Open+in&message=VSCode&logo=visualstudiocode&color=007ACC&logoColor=007ACC&labelColor=2C2C32)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/azureconfidentialledger-app-samples)
+# Azure Confidential Ledger (ACL) Sample Applications
 
-Sample applications for the [Azure Confidential Ledger (ACL)](https://azure.microsoft.com/en-us/products/azure-confidential-ledger/?msockid=189fabbc4d0a6df4277cbf724c606cb2).
+Welcome to the Azure Confidential Ledger (ACL) Sample Applications repository! This repository is dedicated to providing a collection of sample applications designed to help developers learn, understand and develop applications that can be deployed on Azure Confidential Ledger service.
+
+## About Azure Confidential Ledger
+
+Azure Confidential Ledger (ACL) is a secure and tamper-proof ledger service that leverages the power of Azure's confidential computing capabilities. It ensures the integrity and confidentiality of your data, making it an ideal solution for scenarios that require high levels of security and trust.
+
+## Repository Contents
+
+In this repository, you will find a variety of sample applications that demonstrate how to develop and deploy applications targeting the Azure Confidential Ledger service. Each sample includes detailed instructions and code examples to help you get started quickly.
+
+# Azure Confidential Ledger App Samples [![Open in VSCode](https://img.shields.io/static/v1?label=Open+in&message=VSCode&logo=visualstudiocode&color=007ACC&logoColor=007ACC&labelColor=2C2C32)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/azureconfidentialledger-app-samples)
 
 ## Quickstart
 
