@@ -2,7 +2,7 @@
   "endpoints": {
     "/echo": {
       "post": {
-        "js_module": "app.js",
+        "js_module": "src/app.js",
         "js_function": "echo_handler",
         "forwarding_required": "never",
         "authn_policies": ["user_cert"],

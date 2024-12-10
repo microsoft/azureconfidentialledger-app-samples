@@ -197,56 +197,30 @@ if __name__ == "__main__":
         tester.setup_ledger()
 
     admin_client = tester.get_client(session_auth=tester.admin_identity)
-    bundle = {
-        "metadata": {
-            "endpoints": {
-                "/content": {
-                    "get": {
-                        "js_module": "test.js",
-                        "js_function": "content",
-                        "forwarding_required": "never",
-                        "redirection_strategy": "none",
-                        "authn_policies": ["no_auth"],
-                        "mode": "readonly",
-                        "openapi": {},
-                    }
-                }
-            }
-        },
-        "modules": [
-            {
-                "name": "test.js",
-                "module": """
-                import { foo } from "./bar/baz.js";
 
-                export function content(request) {
-                    return {
-                        statusCode: 200,
-                        body: {
-                            payload: foo(),
-                        },
-                    };
-                }
-                """,
-            },
-            {
-                "name": "bar/baz.js",
-                "module": """
-                export function foo() {
-                    return "Test content";
-                }
-                """,
-            },
-        ],
+    with open(args.metadata) as fp:
+        metadata = json.load(fp)
+    modules = []
+    for path in args.module:
+        with open(path) as fp:
+            modules.append({   
+                "name": path,
+                "module": fp.read(),
+            })
+    bundle = {
+        "metadata": metadata,
+        "modules": modules,
     }
 
-    headers = {"content-type": "application/json"}
+    json_headers = {"content-type": "application/json"}
     verify_response(
         admin_client.put(
             f"/app/userDefinedEndpoints?api-version={args.api_version}",
-            body=bundle, headers=headers),
+            body=bundle, headers=json_headers),
         HTTPStatus.CREATED)
 
     verify_response(
-        admin_client.get("/app/content"),
+        admin_client.post(
+            "/app/echo",
+            body={"value":"echo"}, headers=json_headers),
         HTTPStatus.OK)
