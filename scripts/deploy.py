@@ -218,9 +218,3 @@ if __name__ == "__main__":
             f"/app/userDefinedEndpoints?api-version={args.api_version}",
             body=bundle, headers=json_headers),
         HTTPStatus.CREATED)
-
-    verify_response(
-        admin_client.post(
-            "/app/echo",
-            body={"value":"echo"}, headers=json_headers),
-        HTTPStatus.OK)
