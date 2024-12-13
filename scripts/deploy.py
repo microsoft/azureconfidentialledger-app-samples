@@ -183,8 +183,10 @@ if __name__ == "__main__":
     parser.add_argument('--api-version', default='2024-08-22-preview', help="API version")
     def valid_path(path):
         return path if os.path.isfile(path) else argparse.ArgumentTypeError(f"File not found: {path}")
-    parser.add_argument('--metadata', type=valid_path, default='app.json', help="Path to app.json")
-    parser.add_argument('--module', nargs='+', type=valid_path, help="Paths to modules")
+    parser.add_argument('--metadata', type=valid_path, default=None, help="Path to app.json")
+    parser.add_argument('--module', nargs='+', type=valid_path, help="Paths to modules.")
+    parser.add_argument('--bundle', type=valid_path, default=None, help="Path to bundle.")
+    parser.add_argument('-d', '--debug', action='store_true', default=False, help='set js_runtime_args to log output')
     args = parser.parse_args()
 
     [host, port] = args.host.split(':')
@@ -198,19 +200,29 @@ if __name__ == "__main__":
 
     admin_client = tester.get_client(session_auth=tester.admin_identity)
 
-    with open(args.metadata) as fp:
-        metadata = json.load(fp)
-    modules = []
-    for path in args.module:
-        with open(path) as fp:
-            modules.append({   
-                "name": path,
-                "module": fp.read(),
-            })
-    bundle = {
-        "metadata": metadata,
-        "modules": modules,
-    }
+    if args.debug:
+        admin_client.patch(
+            f"/app/userDefinedEndpoints/runtimeOptions?api-version={args.api_version}", 
+            body={'log_exception_details': True, 'return_exception_details': True})
+
+    bundle = None
+    if args.metadata and args.module:
+        with open(args.metadata) as fp:
+            metadata = json.load(fp)
+        modules = []
+        for path in args.module:
+            with open(path) as fp:
+                modules.append({   
+                    "name": path,
+                    "module": fp.read(),
+                })
+        bundle = {
+            "metadata": metadata,
+            "modules": modules,
+        }
+    elif args.bundle:
+        with open(args.bundle) as fp:
+            bundle = json.load(fp)
 
     json_headers = {"content-type": "application/json"}
     verify_response(
