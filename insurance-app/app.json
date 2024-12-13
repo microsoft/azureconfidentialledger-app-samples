@@ -1,0 +1,42 @@
+{
+  "endpoints": {
+    "/policy": {
+      "put": {
+        "js_module": "endpoints/config.js",
+        "js_function": "set_policy",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      }
+    },
+    "/processor": {
+      "put": {
+        "js_module": "endpoints/config.js",
+        "js_function": "set_processor",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      }
+    },
+    "/incident": {
+      "post": {
+        "js_module": "endpoints/incident.js",
+        "js_function": "add_incident",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      }
+    },
+    "/incident/<case-id>/decision": {
+      "put": {
+        "js_module": "endpoints/incident.js",
+        "js_function": "put_case_decision",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      },
+      "get": {
+        "js_module": "endpoints/incident.js",
+        "js_function": "get_case_decision",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      }
+    }
+  }
+}
