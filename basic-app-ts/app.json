@@ -19,7 +19,7 @@
                     "value": {
                       "type": "string"
                     }
-                  } 
+                  }
                 }
               }
             }
@@ -34,7 +34,7 @@
                       "value": {
                         "type": "string"
                       }
-                    } 
+                    }
                   }
                 }
               }
