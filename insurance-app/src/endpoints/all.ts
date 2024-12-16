@@ -1,2 +1,2 @@
-export * from "./config"
-export * from "./incident"
+export * from "./config";
+export * from "./incident";
