@@ -1,28 +1,34 @@
 import * as ccfapp from "@microsoft/ccf-app";
 import { ccf } from "@microsoft/ccf-app/global";
-import { ErrorResponse } from "./common";
+import { ErrorResponse, decodeJWT, errorResponse, getJWTUser} from "./common";
 
-interface Policy {
-  value: string;
+const config_map = ccfapp.rawKv('config')
+const POLICY_KEY = "policy";
+const PROCESSOR_ATTESTATION_KEY = "attestation"
+
+export function getPolicy() : string | undefined {
+  return config_map.get(POLICY_KEY);
 }
 
-interface Processor {
-  value: string;
+export function verifyProcessorAttestation(attestation: ArrayBuffer) : boolean{
+  // TODO: actually verify attestation matches
+  return true;
 }
 
-export function set_policy(
-  request: ccfapp.Request<Policy>,
+export function setPolicy(
+  request: ccfapp.Request<string>,
 ): ccfapp.Response<any | ErrorResponse> {
-  return {
-    statusCode: 400,
-    body: {
-      error: "TODO",
-    },
-  };
+  const oid = getJWTUser(request.headers['authorization']);
+  if (oid === undefined) { return errorResponse(403, "Unable to parse JWT authorization.");}
+
+  const actionPermitted = acl.authz.actionAllowed(oid, "/policy/write");
+  if (!actionPermitted) { return errorResponse(403, "Not authorized to update policy."); }
+
+  config_map.set(POLICY_KEY, request.body);
 }
 
-export function set_processor(
-  request: ccfapp.Request<Processor>,
+export function setProcessorAttestation(
+  request: ccfapp.Request<string>,
 ): ccfapp.Response<any | ErrorResponse> {
   return {
     statusCode: 400,

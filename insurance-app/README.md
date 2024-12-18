@@ -16,34 +16,39 @@ A policy must be valid when the incident is assigned a case number.
 
 A processing service must be valid at the time of submission of the decision.
 
+## Roles
+
+### ServiceAdmin
+Can update policy and attestation
+
 ## Processes
 
 ### Incident claim
 
 - Client: submits incident fingerprint to ACL, receives back case number, and current policy
-  - ACL maps case number to policy fingerprint and incident fingerprint
+  - ACL maps case number to metadata (policy fingerprint and incident fingerprint)
 - Client: submits incident, case number and policy to processing service
-- Processing service: reaches decision, submits to ACL attested and signed case number, incident and policy fingerprints and decision
-  - ACL adds to case if the processing service and policy is valid, and there has not been a previously submitted decision.
-- Client polls for result of decision, uses receipt to prove that a valid decision was reached.
+- Processing service: reaches decision, submits to ACL attested: case number, incident and policy fingerprints and decision
+  - ACL stores case decision if the processing service and policy is valid, and there has not been a previously submitted decision.
+- Client polls for result of decision.
 
 ## Design constraints
 
 ### Configurable processing service and policy
 
-Endpoint to update the _single_ valid processing service and policy.
-Multiple should be fine, but this will simplify.
+Endpoint to specify valid processing services and policies.
+Currently only one is supported.
 
 ### No replay
 
-A client should not be able to submit the same decision multiple times to reach a different decision.
+A client should not be able to submit the same decision multiple times to different processors to reach a favorable decisions.
 Provided case number is unique (must manually audit to ensure same incident isn't report multiple times), and at most one decision can be reached per case.
-Additionally the client does not control the result of the decision since the processing service directly contacts ACL.
+Additionally the client must not control the result of the decision, so the processing service directly contacts ACL.
 
 ### Avoid PII in ledger
 
-We should avoid holding any PII in the ledger, since the ledger is immutable and cannot follow EU right-to-be-forgotten requests.
+We should avoid holding any PII in the ledger, since it would be difficult to follow GDPR requests etc.
 
 ## Build and run this sample
 
-`npm exec build_bundle` then upload bundle to ACL via "PUT <url>/app/userDefinedEndpoints?<api-version>".
+`npm run build` then upload bundle to ACL via "PUT <url>/app/userDefinedEndpoints?<api-version>".
