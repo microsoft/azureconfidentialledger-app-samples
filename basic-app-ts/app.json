@@ -1,0 +1,47 @@
+{
+  "endpoints": {
+    "/echo": {
+      "post": {
+        "js_module": "endpoints/app.js",
+        "js_function": "echo_handler",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"],
+        "openapi": {
+          "security": [],
+          "parameters": [],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "type": "object",
+                "schema": {
+                  "properties": {
+                    "value": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "content": {
+                "application/json": {
+                  "type": "object",
+                  "schema": {
+                    "properties": {
+                      "value": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
