@@ -1,21 +1,23 @@
 import * as ccfapp from "@microsoft/ccf-app";
+import * as ccfcrypto from "@microsoft/ccf-app/crypto"
 import { ccf } from "@microsoft/ccf-app/global";
 import { ErrorResponse, errorResponse } from "./common";
-import { getPolicy, verifyProcessorAttestation } from "./config";
-import { v4 as uuid } from "uuid";
+import { getPolicy, verifyProcessor} from "./config";
 
 const DIGEST_ALGORITHM = "SHA-256";
 
-interface CaseMetadata {
-  incident: ArrayBuffer;
-  policy: ArrayBuffer;
-}
-const caseMetadata = ccfapp.typedKv("caseMetadata", ccfapp.string, ccfapp.json);
+const kvCaseId = ccfapp.typedKv("caseId", ccfapp.string, ccfapp.int32)
 
-const caseDecision = ccfapp.typedKv("caseDecision", ccfapp.string, ccfapp.bool);
+interface CaseMetadata {
+  incident: string;
+  policy: string;
+}
+const caseMetadata = ccfapp.typedKv("caseMetadata", ccfapp.string, ccfapp.json<CaseMetadata>());
+
+const caseDecision = ccfapp.typedKv("caseDecision", ccfapp.string, ccfapp.float32);
 
 interface ReqAddIncident {
-  incidentFingerprint: ArrayBuffer;
+  incidentFingerprint: string;
 }
 interface RespAddIncident {
   caseId: string;
@@ -24,19 +26,27 @@ interface RespAddIncident {
 export function addIncident(
   request: ccfapp.Request<ReqAddIncident>
 ): ccfapp.Response<RespAddIncident | ErrorResponse> {
-  const case_id = uuid();
-  const policy = getPolicy();
+  const callerId = acl.certUtils.convertToAclFingerprintFormat();
+
+  var case_id_int = kvCaseId.get("default");
+  if (case_id_int === undefined) {
+    case_id_int = 0
+  }
+  kvCaseId.set("default", case_id_int + 1);
+  const case_id = String(case_id_int);
+
+  const policy = getPolicy(callerId);
   if (policy === undefined) {
     return errorResponse(400, "No policy found");
   }
 
-  const incidentFingerprint = request.body.json().fingerprint;
-  const policyFingerprint = ccfapp.crypto.digest("SHA-256", ccf.strToBuf(policy));
+  const incidentFingerprint = request.body.json().incidentFingerprint;
 
   caseMetadata.set(case_id, {
     incident: incidentFingerprint,
-    policy: policyFingerprint,
+    policy: policy,
   });
+
 
   return {
     statusCode: 200,
@@ -51,7 +61,7 @@ export function getMetadata(
   request: ccfapp.Request
 ): ccfapp.Response<CaseMetadata | ErrorResponse> {
   const caseId = request.params["caseId"];
-  const metadata = caseMetadata.get(caseId);
+  const metadata : CaseMetadata = caseMetadata.get(caseId);
   if (metadata === undefined) {
     return errorResponse(400, "Case number not found");
   }
@@ -62,17 +72,17 @@ export function getMetadata(
 }
 
 interface ReqPutIncidentDecision {
-  caseId: string;
   incidentFingerprint: string;
-  policyFingerprint: string;
-  decision: boolean;
-  attestation: ArrayBuffer;
+  policy: string;
+  decision: number;
 }
 export function putCaseDecision(
   request: ccfapp.Request<ReqPutIncidentDecision>
 ): ccfapp.Response<any | ErrorResponse> {
-  const body = request.body.json();
+  const callerId = acl.certUtils.convertToAclFingerprintFormat();
+  if(!verifyProcessor(callerId)) { return errorResponse(403, "Processor invalid"); }
 
+  const body = request.body.json();
   const caseId = request.params["caseId"];
 
   const metadata = caseMetadata.get(caseId);
@@ -83,14 +93,9 @@ export function putCaseDecision(
   if (!(metadata.incident === body.incidentFingerprint)) {
     return errorResponse(400, "Incident fingerprint does not match.");
   }
-  if (!(metadata.policy === body.policyFingerprint)) {
+  if (!(metadata.policy === body.policy)) {
     return errorResponse(400, "Policy fingerprint not match.");
   }
-  if (!verifyProcessorAttestation(body.attestation)) {
-    return errorResponse(400, "Invalid attestation.");
-  }
-  // TODO verify attested fingerprints and decision matches
-
   if (caseDecision.has(caseId)){
     return errorResponse(400, "Already stored decision");
   }
@@ -103,7 +108,7 @@ export function putCaseDecision(
 
 export function getCaseDecision(
   request: ccfapp.Request
-): ccfapp.Response<boolean | ErrorResponse> {
+): ccfapp.Response<{decision:string, decisionVersion: number} | ErrorResponse> {
   const caseId = request.params["caseId"];
   if (!caseMetadata.has(caseId)) {
     return errorResponse(400, "Unknown case id.");

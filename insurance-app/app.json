@@ -1,17 +1,47 @@
 {
   "endpoints": {
-    "/policy": {
-      "put": {
+    "/dump_table": {
+      "get": {
         "js_module": "endpoints/config.js",
-        "js_function": "setPolicy",
+        "js_function": "dumpTable",
+        "forwarding_required": "always",
+        "authn_policies": ["no_auth"]
+      }
+    },
+    "/user_cert": {
+      "get": {
+        "js_module": "endpoints/config.js",
+        "js_function": "getUserCert",
         "forwarding_required": "always",
         "authn_policies": ["any_cert"]
       }
     },
-    "/processor": {
+    "/policy": {
       "put": {
         "js_module": "endpoints/config.js",
-        "js_function": "setProcessor",
+        "js_function": "setUserPolicy",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      },
+      "get": {
+        "js_module": "endpoints/config.js",
+        "js_function": "getUserPolicy",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      }
+    },
+    "/processor/attestation": {
+      "put": {
+        "js_module": "endpoints/config.js",
+        "js_function": "setProcessorAttestation",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      }
+    },
+    "/processor/register": {
+      "put": {
+        "js_module": "endpoints/config.js",
+        "js_function": "addProcessor",
         "forwarding_required": "always",
         "authn_policies": ["any_cert"]
       }
@@ -21,15 +51,16 @@
         "js_module": "endpoints/incident.js",
         "js_function": "addIncident",
         "forwarding_required": "always",
-        "authn_policies": ["any_cert"]
+        "authn_policies": ["no_auth"]
       }
     },
-    "/incident/{caseId]/metadata": {
+    "/incident/{caseId}/metadata": {
       "get": {
         "js_module": "endpoints/incident.js",
         "js_function": "getMetadata",
         "forwarding_required": "always",
-        "authn_policies": ["any_cert"]
+        "authn_policies": ["no_auth"],
+        "mode": "readonly"
       }
     },
     "/incident/{caseId}/decision": {
@@ -37,14 +68,14 @@
         "js_module": "endpoints/incident.js",
         "js_function": "putCaseDecision",
         "forwarding_required": "always",
-        "authn_policies": ["any_cert"]
+        "authn_policies": ["no_auth"]
       },
       "get": {
         "js_module": "endpoints/incident.js",
         "js_function": "getCaseDecision",
         "forwarding_required": "always",
-        "authn_policies": ["any_cert"],
-        "mode": "readonly",
+        "authn_policies": ["no_auth"],
+        "mode": "readonly"
       }
     }
   }
