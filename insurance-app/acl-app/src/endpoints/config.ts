@@ -49,6 +49,7 @@ export function setUserPolicy(
 
   const body = request.body.json();
 
+  // Note: cannot make user or processor 'users' as this requires write access to TPAL users
   //// Register user with roles
   //let userRolesMapHandle = ccf.kv[userRolesMapTable];
   //userRolesMapHandle.set(ccf.strToBuf(body.cert), ccf.strToBuf("[InsuranceUser]"))

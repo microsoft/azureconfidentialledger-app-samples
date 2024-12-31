@@ -159,3 +159,8 @@ if __name__ == "__main__":
         },
         headers={"content-type": "application/json"}
       )
+
+      # Get case decision
+      client.get(
+        f"/app/incident/{case_report['caseId']}/decision",
+      )
