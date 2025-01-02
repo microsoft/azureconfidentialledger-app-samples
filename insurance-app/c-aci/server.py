@@ -2,6 +2,9 @@
 import grpc
 import attestation_protobuf.attestation_service_pb2_grpc as as_grpc
 import attestation_protobuf.attestation_service_pb2 as as_pb
+import base64
+
+import hashlib
 
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 import ssl
@@ -11,22 +14,27 @@ import requests
 import time
 
 import argparse
+import tempfile
 
 def attest_data(uds_sock, report_data):
   stub=as_grpc.AttestationContainerStub(grpc.insecure_channel(f"unix:{uds_sock}"))
   report = stub.FetchAttestation(report_data=report_data.encode('utf-8'))
   return report
 
+def register_with_acl(url, keypath, certpath, attestation, platform_certs, uvm_endorsements):
+  payload = {
+    'attestation': base64.b64encode(attestation),
+    'platform_certificates': base64.b64encode(platform_certs),
+    'uvm_endorsements': base64.b64encode(uvm_endorsements)
+  }
+  return requests.put(url, cert=(certpath, keypath), json=payload).status_code == 200
+
 def process_incident(incident, policy):
   # TODO process claim
   return 100
 
-def fingerprint(data):
-  # Calculate fingerprint of data
-  pass
-
 class Handler(SimpleHTTPRequestHandler):
-  acl_register_url = None
+  acl_register_decision_url = None
 
   def do_POST(self):
     content_length = int(self.headers['Content-Length'])
@@ -42,12 +50,12 @@ class Handler(SimpleHTTPRequestHandler):
     if not 'policy' in request_data.keys: return self.send_error(400, 'No policy')
     if not 'caseId' in request_data.keys: return self.send_error(400, 'No caseId')
 
-    result = process_incident(request_data['incident'], request_data['policy'])a
+    result = process_incident(request_data['incident'], request_data['policy'])
 
     # Register decision with ACL app, repeat until successful
-    request_url = self.acl_register_url % request_data['caseId']
+    request_url = self.acl_register_decision_url % request_data['caseId']
     request_body = {
-        'incidentFingerprint':fingerprint(request_data['incident']),
+        'incidentFingerprint':hashlib.sha256(request_data['incident']),
         'policy': request_data['policy'],
         'decision': str(result)
       }
@@ -59,16 +67,33 @@ class Handler(SimpleHTTPRequestHandler):
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--uds-sock", type=str)
-  parser.add_argument("--openssl-cert", type=str)
-  parser.add_argument("--openssl-key", type=str)
   parser.add_argument("--listen", default="0.0.0.0:443")
-  parser.add_argument("--acl-register-url", type=str)
+  parser.add_argument("--acl-register-processor-url", type=str)
+  parser.add_argument("--acl-register-decision-url")
   args = parser.parse_args()
 
-  attest_ssl_key = attest_data(args.uds_sock, "FAKE_SSL_PUBKEY") # TODO fix
+  with tempfile.NamedTemporaryFile("w", suffix=".pem") as keyfile, \
+       tempfile.NamedTemporaryFile("w", suffix=".pem") as certfile:
 
-  Handler.acl_register_url = args.acl_register_url
+    # TODO generate new key somehow
+    key = "FakeKey"
+    cert = "FakeCert"
 
-  [host,port] = args.listen
-  httpd = HTTPServer((host, port), Handler)
-  httpd.socket = ssl.wrap_socket(httpd.socket, certfile=args.openssl_cert, keyfile=args.openssl_key, server_side=True)
+    keyfile.write(key)
+    keyfile.flush()
+    certfile.write(cert)
+    certfile.flush()
+
+    attest_report = attest_data(args.uds_sock, hashlib.sha512(cert))
+
+    register_with_acl(
+      args.acl_register_processor_url,
+      attest_report.attestation,
+      attest_report.platform_certificates,
+      attest_report.uvm_endorsement)
+
+    Handler.acl_register_decision_url = args.acl_register_decision_url
+
+    [host,port] = args.listen
+    httpd = HTTPServer((host, port), Handler)
+    httpd.socket = ssl.wrap_socket(httpd.socket, certfile=args.openssl_cert, keyfile=args.openssl_key, server_side=True)

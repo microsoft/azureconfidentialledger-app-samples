@@ -51,7 +51,7 @@ if __name__ == "__main__":
         f"/app/roles?api-version={test_harness.api_version}",
         body={
           "roles": [
-            {"role_name": "InsuranceAdmin", "role_actions": ["/policy/write", "/processor/write"]},
+            {"role_name": "InsuranceAdmin", "role_actions": ["/policy/write", "/policy/read", "/processor/write", "/processor/read"]},
             {"role_name": "InsuranceUser", "role_actions": ["/policy/read"]}
           ]
         },
