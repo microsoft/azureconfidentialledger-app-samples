@@ -1,7 +1,7 @@
 import * as ccfapp from "@microsoft/ccf-app";
 import * as ccfcrypto from "@microsoft/ccf-app/crypto"
 import { ccf } from "@microsoft/ccf-app/global";
-import { ErrorResponse, errorResponse } from "./common";
+import { ErrorResponse, errorResponse, Result, result_ok,  result_error } from "./common";
 import { getPolicy, verifyProcessor} from "./config";
 
 const DIGEST_ALGORITHM = "SHA-256";
@@ -26,7 +26,10 @@ interface RespAddIncident {
 export function addIncident(
   request: ccfapp.Request<ReqAddIncident>
 ): ccfapp.Response<RespAddIncident | ErrorResponse> {
-  const callerId = acl.certUtils.convertToAclFingerprintFormat();
+  const validation = validateReqAddIncident(request)
+  if (!validation.ok) {
+    return errorResponse(400, validation.value)
+  }
 
   var case_id_int = kvCaseId.get("default");
   if (case_id_int === undefined) {
@@ -35,6 +38,7 @@ export function addIncident(
   kvCaseId.set("default", case_id_int + 1);
   const case_id = String(case_id_int);
 
+  const callerId = acl.certUtils.convertToAclFingerprintFormat();
   const policy = getPolicy(callerId);
   if (policy === undefined) {
     return errorResponse(400, "No policy found");
@@ -60,6 +64,11 @@ export function addIncident(
 export function getMetadata(
   request: ccfapp.Request
 ): ccfapp.Response<CaseMetadata | ErrorResponse> {
+  const validation = validateGetMetadata(request);
+  if (!validation.ok) {
+    return errorResponse(400, validation.value)
+  }
+
   const caseId = request.params["caseId"];
   const metadata : CaseMetadata = caseMetadata.get(caseId);
   if (metadata === undefined) {
@@ -79,6 +88,11 @@ interface ReqPutIncidentDecision {
 export function putCaseDecision(
   request: ccfapp.Request<ReqPutIncidentDecision>
 ): ccfapp.Response<any | ErrorResponse> {
+  const validation = validateReqPutIncidentDecision(request);
+  if (!validation.ok) {
+    return errorResponse(400, validation.value);
+  }
+
   const callerId = acl.certUtils.convertToAclFingerprintFormat();
   if(!verifyProcessor(callerId)) { return errorResponse(403, "Processor invalid"); }
 
@@ -109,6 +123,10 @@ export function putCaseDecision(
 export function getCaseDecision(
   request: ccfapp.Request
 ): ccfapp.Response<{decision:string, decisionVersion: number} | ErrorResponse> {
+  const validation = valdiateGetCaseDecision(request);
+  if (!validation.ok) {
+    return errorResponse(400, validation.value);
+  }
   const caseId = request.params["caseId"];
   if (!caseMetadata.has(caseId)) {
     return errorResponse(400, "Unknown case id.");
@@ -128,4 +146,50 @@ export function getCaseDecision(
       decisionVersion: prevVersion
     },
   };
+}
+
+function validateReqAddIncident(req : ccfapp.Request<ReqAddIncident>) : Result<string> {
+  try {
+    var body = req.body.json();
+  } catch (error) {
+    return result_error("Failed while parsing body: " + error.message);
+  }
+  if (!body.incidentFingerprint || typeof body.incidentFingerprint !== "string") {
+    return result_error("Missing or invalid incidentFingerprint.");
+  }
+  return result_ok();
+}
+
+function validateGetMetadata(req : ccfapp.Request) : Result<string> {
+  const caseId = req.params["caseId"]
+  if(!caseId || typeof caseId !== "string") {
+    return result_error("Missing or invalid caseId in parameters.");
+  }
+  return result_ok();
+}
+
+function validateReqPutIncidentDecision(req: ccfapp.Request<ReqPutIncidentDecision) : Result<string> {
+  try {
+    var body = req.body.json();
+  } catch (error) {
+    return result_error("Failed while parsing body: " + error.message);
+  }
+  if(!body.incidentFingerprint || typeof body.incidentFingerprint !== "string") {
+    return result_error("Missing or invalid incidentFingerprint.");
+  }
+  if(!body.policy || typeof body.policy !== "string") {
+    return result_error("Missing or invalid policy.");
+  }
+  if(!body.decision || typeof body.decision != "number") {
+    return result_error("Missing or invalid decision.");
+  }
+  return result_ok();
+} 
+
+function valdiateGetCaseDecision(req : ccfapp.Request) : Result<string> {
+  const caseId = req.params["caseId"]
+  if(!caseId || typeof caseId !== "string") {
+    return result_error("Missing or invalid caseId in parameters.");
+  }
+  return result_ok();
 }

@@ -1,6 +1,6 @@
 import * as ccfapp from "@microsoft/ccf-app";
 import { ccf } from "@microsoft/ccf-app/global";
-import { ErrorResponse, errorResponse } from "./common";
+import { ErrorResponse, errorResponse, Result, result_error } from "./common";
 
 
 const userRolesMapTable = "public:confidentialledger.roles.user_roles_mapping";
@@ -36,16 +36,17 @@ interface ReqRegisterUserPolicy {
   policy: string,
 }
 
-/**
- * 
- * @param request The incoming request of a user certificate and the policy
- */
 export function setUserPolicy(
   request: ccfapp.Request<ReqRegisterUserPolicy>
 ) : ccfapp.Response {
   const callerId = acl.certUtils.convertToAclFingerprintFormat();
   const actionPermitted = acl.authz.actionAllowed(callerId, "/policy/write");
   if (!actionPermitted) { return errorResponse(403, `${callerId} is not authorized to register user.`); }
+
+  const validation = validateReqRegisterUserPolicy(request);
+  if (!validation.ok) {
+    return errorResponse(400, validation.value);
+  }
 
   const body = request.body.json();
 
@@ -115,4 +116,18 @@ export function addProcessor(
 
 export function verifyProcessor(processor_cert: string) : boolean{
   return validProcessors.has(processor_cert);
+}
+
+function validateReqRegisterUserPolicy(req : ccfapp.Request<ReqRegisterUserPolicy>) : Result<string> {
+  try {
+    var body = req.body.json();
+  } catch (error) {
+    return result_error("Failed while parsing body: " + error.message);
+  }
+  if(!body.cert || typeof body.cert !== "string") {
+    return result_error("Missing or invalid user certificate.");
+  }
+  if(!body.policy || typeof body.policy !== "string") {
+    return result_error("Missing or invalid policy.");
+  }
 }
