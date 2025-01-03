@@ -7,35 +7,32 @@ import {
 } from "@microsoft/ccf-app/global";
 import { Base64 } from "js-base64";
 
+const SINGLETON_KEY = 'default'
+
 interface UvmEndorsements {
   did: string;
   feed: string;
   svn: string;
 }
 
-interface ProcessorMetadata {
-  measurement: string;
+interface ValidProcessorProperties {
+  uvm_endorsements : UvmEndorsements,
+  measurement : string[],
+  policy : string[]
+}
+
+interface ProcessorProperties {
   uvm_endorsements: UvmEndorsements;
+  measurement: string;
+  policy : string
 }
 
 const userPolicies = ccfapp.typedKv("userPolicy", ccfapp.string, ccfapp.string);
-
-const validProcessorUvm = ccfapp.typedKvSet(
-  "validProcessorUvm",
-  ccfapp.json<UvmEndorsements>()
-);
-const validProcessorMeasurement = ccfapp.typedKvSet(
-  "validProcessorMeasurement",
-  ccfapp.string
-);
-const validProcessorPolicy = ccfapp.typedKvSet(
-  "validProcessorPolicy",
-  ccfapp.string
-);
-const validProcessors = ccfapp.typedKv(
+const validProcessorProperties = ccfapp.typedKv("validProcessorProperties", ccfapp.string, ccfapp.json<ValidProcessorProperties>());
+const processors = ccfapp.typedKv(
   "validProcessors",
   ccfapp.string,
-  ccfapp.checkedJson<ProcessorMetadata>()
+  ccfapp.checkedJson<ProcessorProperties>()
 );
 
 export function getPolicy(usercert: string): string | undefined {
@@ -102,14 +99,30 @@ export function getUserPolicy(
 }
 
 export function isValidProcessor(processor_cert: string): boolean {
-  return validProcessors.has(processor_cert);
+  let properties = processors.get(processor_cert);
+  return isValidProcessorProperties(properties);
 }
 
-export function setProcessorUvmEndorsements(
-  request: ccfapp.Request<UvmEndorsements>
-): ccfapp.Response<any | ErrorResponse> {
+function isValidProcessorProperties(properties: ProcessorProperties) : boolean {
+  let valid_properties = validProcessorProperties.get(SINGLETON_KEY)
+  if (properties.uvm_endorsements !== valid_properties.uvm_endorsements) {
+    return false
+  }
+  if (!valid_properties.measurement.includes(properties.measurement)) {
+    return false
+  }
+  if (!valid_properties.policy.includes(properties.policy)) {
+    return false
+  }
+  return true;
+}
+
+export function setValidProcessorPolicy(
+  request: ccfapp.Request<ValidProcessorProperties>
+) : ccfapp.Response<any | ErrorResponse> {
   const callerId = acl.certUtils.convertToAclFingerprintFormat();
   const actionPermitted = acl.authz.actionAllowed(callerId, "/processor/write");
+
   if (!actionPermitted) {
     return errorResponse(
       403,
@@ -117,115 +130,44 @@ export function setProcessorUvmEndorsements(
     );
   }
 
-  let uvm_endorsements: UvmEndorsements;
+  let properties: ValidProcessorProperties;
   try {
     const body = request.body.json();
-    if (!body.did || typeof body.did !== "string") {
+    if (!body.uvm_endorsements) {
+      return errorResponse(400, "Missing uvm endorsements");
+    }
+    if (!body.uvm_endorsements.did || typeof body.uvm_endorsements.did !== "string") {
       return errorResponse(400, "Invalid uvm did.");
     }
-    if (!body.feed || typeof body.feed !== "string") {
+    if (!body.uvm_endorsements.feed || typeof body.uvm_endorsements.feed !== "string") {
       return errorResponse(400, "Invalid uvm feed.");
     }
-    if (!body.svn || typeof body.svn !== "string") {
+    if (!body.uvm_endorsements.svn || typeof body.uvm_endorsements.svn !== "string") {
       return errorResponse(400, "Invalid uvm svn.");
     }
-    uvm_endorsements = body;
+    properties.uvm_endorsements = body.uvm_endorsements;
+
+    if(!body.measurement || !Array.isArray(body.measurement) || !body.measurement.every(item => typeof item === 'string')) {
+      return errorResponse(400, "Invalid or missing measurement")
+    }
+    if(!body.policy || !Array.isArray(body.policy) || !body.policy.every(item => typeof item === 'string')) {
+      return errorResponse(400, "Invalid or missing measurement")
+    }
+    properties = body;
   } catch (error) {
-    return errorResponse(400, "Error while parsing uvm_endorsements.");
+    return errorResponse(400, "Error while parsing properties");
   }
 
-  // Remove containers with different uvm endorsements
-  if (!validProcessorUvm.has(uvm_endorsements)) {
-    validProcessors.clear();
-  }
-  validProcessorUvm.clear();
-  validProcessorUvm.add(uvm_endorsements);
-
-  return {
-    statusCode: 200,
-  };
+  validProcessorProperties.set(SINGLETON_KEY, properties);
 }
 
-export function listProcessorMeasurements(
+export function getValidProcessorPolicy(
   request: ccfapp.Request
-): ccfapp.Response<string | ErrorResponse> {
-  const callerId = acl.certUtils.convertToAclFingerprintFormat();
-  const actionPermitted = acl.authz.actionAllowed(callerId, "/processor/read");
-  if (!actionPermitted) {
-    return errorResponse(
-      403,
-      `${callerId} is not authorized to access measurements.`
-    );
-  }
-
-  let acc = [];
-  validProcessorMeasurement.forEach((measurement_b64: string, _) => {
-    acc.push(measurement_b64);
-  });
+) : ccfapp.Response<ValidProcessorProperties> {
   return {
     statusCode: 200,
-    body: `[${acc.join(",")}]`,
-  };
-}
-
-export function addProcessorMeasurement(
-  request: ccfapp.Request<string>
-): ccfapp.Response<any | ErrorResponse> {
-  const callerId = acl.certUtils.convertToAclFingerprintFormat();
-  const actionPermitted = acl.authz.actionAllowed(callerId, "/processor/write");
-  if (!actionPermitted) {
-    return errorResponse(
-      403,
-      `${callerId} is not authorized to add measurements.`
-    );
+    body : validProcessorProperties.get(SINGLETON_KEY)
   }
-
-  let processorMeasurement;
-  try {
-    if (!request.body || !Base64.isValid(request.body)) {
-      return errorResponse(400, "Missing or malformed measurement.");
-    }
-    processorMeasurement = request.body;
-  } catch (error) {
-    return errorResponse(
-      400,
-      "An error occurred while processing measurement: " + error.message
-    );
-  }
-
-  validProcessorMeasurement.add(processorMeasurement);
-
-  return { statusCode: 200 };
-}
-
-export function deleteProcessorMeasurement(
-  request: ccfapp.Request<string>
-): ccfapp.Response<any | ErrorResponse> {
-  const callerId = acl.certUtils.convertToAclFingerprintFormat();
-  const actionPermitted = acl.authz.actionAllowed(callerId, "/processor/write");
-  if (!actionPermitted) {
-    return errorResponse(
-      403,
-      `${callerId} is not authorized to delete measurements.`
-    );
-  }
-
-  let processorMeasurement;
-  try {
-    if (!request.body || !Base64.isValid(request.body)) {
-      return errorResponse(400, "Missing or malformed measurement.");
-    }
-    processorMeasurement = request.body;
-  } catch (error) {
-    return errorResponse(
-      400,
-      "An error occurred while processing measurement: " + error.message
-    );
-  }
-
-  validProcessorMeasurement.delete(processorMeasurement);
-
-  return { statusCode: 200 };
 }
 
 interface ReqAddProcessor {
@@ -309,6 +251,8 @@ export function addProcessor(
     );
   }
 
+  return errorResponse(400, "DEBUG:" + JSON.stringify(attestation_result))
+
   // Check that certificates match
   if (
     ccf.crypto.digest("SHA-512", request.caller.cert) !==
@@ -320,43 +264,34 @@ export function addProcessor(
     );
   }
 
-  // Check that uvm is valid
-  if (!validProcessorUvm.has(attestation_result.uvm_endorsements)) {
-    return errorResponse(400, "UVM endorsements are invalid.");
-  }
-
-  // Check that measurement is valid
   let measurement_b64 = Base64.fromUint8Array(
     ccfapp
       .typedArray(Uint8Array)
       .decode(attestation_result.attestation.measurement)
   );
-  if (validProcessorMeasurement.has(measurement_b64)) {
-    return errorResponse(400, "Attestation measurement is not valid.");
-  }
-
-  // Check policy (host_data) is valid
   let policy_b64 = Base64.fromUint8Array(
     ccfapp
       .typedArray(Uint8Array)
       .decode(attestation_result.attestation.host_data)
   );
-  if (!validProcessorPolicy.has(policy_b64)) {
-    return errorResponse(400, "Policy (host_data) is not valid.")
+  let properties = {
+    uvm_endorsements: uvm_endorsements,
+    measurement : measurement_b64,
+    policy : policy_b64,
+  }
+  if (!isValidProcessorProperties(properties)){
+    return errorResponse(400, "Properties of container are invalid");
   }
 
   const processorCertFingerprint =
     acl.certUtils.convertToAclFingerprintFormat();
-  validProcessors.set(processorCertFingerprint, {
-    measurement: measurement_b64,
-    uvm_endorsements: attestation_result.uvm_endorsements,
-  });
+  processors.set(processorCertFingerprint, properties);
 
   return { statusCode: 200 };
 }
 
 export function verifyProcessor(processor_cert: string): boolean {
-  return validProcessors.has(processor_cert);
+  return processors.has(processor_cert);
 }
 
 function validateReqRegisterUserPolicy(

@@ -30,10 +30,16 @@
         "authn_policies": ["any_cert"]
       }
     },
-    "/processor/attestation": {
+    "/processor/policy": {
       "put": {
         "js_module": "endpoints/config.js",
-        "js_function": "setProcessorAttestation",
+        "js_function": "setValidProcessorPolicy",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      },
+      "get": {
+        "js_module": "endpoints/config.js",
+        "js_function": "getValidProcessorPolicy",
         "forwarding_required": "always",
         "authn_policies": ["any_cert"]
       }

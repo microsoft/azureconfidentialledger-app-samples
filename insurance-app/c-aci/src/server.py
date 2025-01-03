@@ -18,16 +18,20 @@ import tempfile
 import crypto
 
 def attest_data(uds_sock, report_data: bytes) -> bytes:
-  stub=as_grpc.AttestationContainerStub(grpc.insecure_channel(f"unix:{uds_sock}"))
-  report = stub.FetchAttestation(report_data)
+  path = f"unix://{uds_sock}"
+  print(f"Getting attestation from: {path}")
+  stub=as_grpc.AttestationContainerStub(grpc.insecure_channel(path))
+  report = stub.FetchAttestation(as_pb.FetchAttestationRequest(report_data=report_data))
   return report
 
 def register_with_acl(url, keypath, certpath, attestation, platform_certs, uvm_endorsements):
   payload = {
-    'attestation': base64.b64encode(attestation),
-    'platform_certificates': base64.b64encode(platform_certs),
-    'uvm_endorsements': base64.b64encode(uvm_endorsements)
+    'attestation': base64.b64encode(attestation).decode('ascii'),
+    'platform_certificates': base64.b64encode(platform_certs).decode('ascii'),
+    'uvm_endorsements': base64.b64encode(uvm_endorsements).decode('ascii')
   }
+  print(payload)
+  print(f"Registering with ACL at: {url}")
   return requests.put(url, cert=(certpath, keypath), json=payload).status_code == 200
 
 def process_incident(incident, policy):
@@ -60,6 +64,7 @@ class Handler(SimpleHTTPRequestHandler):
         'policy': request_data['policy'],
         'decision': str(result)
       }
+    print(f"Registering decision with ACL at: {request_url}")
     while(requests.put(request_url, json= request_body).status_code != 200):
       time.sleep(1000) # TODO non-blocking
 
@@ -80,6 +85,9 @@ if __name__ == "__main__":
     privk_pem_str, _ = crypto.generate_rsa_keypair(2048)
     cert_pem_str = crypto.generate_cert(privk_pem_str)
 
+    print(privk_pem_str)
+    print(cert_pem_str)
+
     keyfile.write(privk_pem_str)
     keyfile.flush()
     certfile.write(cert_pem_str)
@@ -93,7 +101,7 @@ if __name__ == "__main__":
       certfile,
       attest_report.attestation,
       attest_report.platform_certificates,
-      attest_report.uvm_endorsement)
+      attest_report.uvm_endorsements)
 
     Handler.acl_register_decision_url = args.acl_register_decision_url
 

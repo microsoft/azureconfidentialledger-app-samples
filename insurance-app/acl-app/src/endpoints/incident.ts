@@ -168,7 +168,7 @@ function validateGetMetadata(req : ccfapp.Request) : Result<string> {
   return result_ok();
 }
 
-function validateReqPutIncidentDecision(req: ccfapp.Request<ReqPutIncidentDecision) : Result<string> {
+function validateReqPutIncidentDecision(req: ccfapp.Request<ReqPutIncidentDecision>) : Result<string> {
   try {
     var body = req.body.json();
   } catch (error) {
