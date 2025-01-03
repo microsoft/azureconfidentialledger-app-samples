@@ -28,6 +28,10 @@ const validProcessorMeasurement = ccfapp.typedKvSet(
   "validProcessorMeasurement",
   ccfapp.string
 );
+const validProcessorPolicy = ccfapp.typedKvSet(
+  "validProcessorPolicy",
+  ccfapp.string
+);
 const validProcessors = ccfapp.typedKv(
   "validProcessors",
   ccfapp.string,
@@ -316,6 +320,11 @@ export function addProcessor(
     );
   }
 
+  // Check that uvm is valid
+  if (!validProcessorUvm.has(attestation_result.uvm_endorsements)) {
+    return errorResponse(400, "UVM endorsements are invalid.");
+  }
+
   // Check that measurement is valid
   let measurement_b64 = Base64.fromUint8Array(
     ccfapp
@@ -326,14 +335,18 @@ export function addProcessor(
     return errorResponse(400, "Attestation measurement is not valid.");
   }
 
-  // Check that uvm is valid
-  if (!validProcessorUvm.has(attestation_result.uvm_endorsements)) {
-    return errorResponse(400, "UVM endorsements are invalid.");
+  // Check policy (host_data) is valid
+  let policy_b64 = Base64.fromUint8Array(
+    ccfapp
+      .typedArray(Uint8Array)
+      .decode(attestation_result.attestation.host_data)
+  );
+  if (!validProcessorPolicy.has(policy_b64)) {
+    return errorResponse(400, "Policy (host_data) is not valid.")
   }
 
   const processorCertFingerprint =
     acl.certUtils.convertToAclFingerprintFormat();
-
   validProcessors.set(processorCertFingerprint, {
     measurement: measurement_b64,
     uvm_endorsements: attestation_result.uvm_endorsements,

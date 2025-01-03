@@ -1,7 +1,7 @@
 
 import grpc
-import attestation_protobuf.attestation_service_pb2_grpc as as_grpc
-import attestation_protobuf.attestation_service_pb2 as as_pb
+import attestation_service_pb2_grpc as as_grpc
+import attestation_service_pb2 as as_pb
 import base64
 
 import hashlib
@@ -15,10 +15,11 @@ import time
 
 import argparse
 import tempfile
+import crypto
 
-def attest_data(uds_sock, report_data):
+def attest_data(uds_sock, report_data: bytes) -> bytes:
   stub=as_grpc.AttestationContainerStub(grpc.insecure_channel(f"unix:{uds_sock}"))
-  report = stub.FetchAttestation(report_data=report_data.encode('utf-8'))
+  report = stub.FetchAttestation(report_data)
   return report
 
 def register_with_acl(url, keypath, certpath, attestation, platform_certs, uvm_endorsements):
@@ -75,19 +76,21 @@ if __name__ == "__main__":
   with tempfile.NamedTemporaryFile("w", suffix=".pem") as keyfile, \
        tempfile.NamedTemporaryFile("w", suffix=".pem") as certfile:
 
-    # TODO generate new key somehow
-    key = "FakeKey"
-    cert = "FakeCert"
+    # TODO ensure this is correct
+    privk_pem_str, _ = crypto.generate_rsa_keypair(2048)
+    cert_pem_str = crypto.generate_cert(privk_pem_str)
 
-    keyfile.write(key)
+    keyfile.write(privk_pem_str)
     keyfile.flush()
-    certfile.write(cert)
+    certfile.write(cert_pem_str)
     certfile.flush()
 
-    attest_report = attest_data(args.uds_sock, hashlib.sha512(cert))
+    attest_report = attest_data(args.uds_sock, hashlib.sha512(cert_pem_str.encode('ascii')).digest())
 
     register_with_acl(
       args.acl_register_processor_url,
+      keyfile,
+      certfile,
       attest_report.attestation,
       attest_report.platform_certificates,
       attest_report.uvm_endorsement)
@@ -96,4 +99,4 @@ if __name__ == "__main__":
 
     [host,port] = args.listen
     httpd = HTTPServer((host, port), Handler)
-    httpd.socket = ssl.wrap_socket(httpd.socket, certfile=args.openssl_cert, keyfile=args.openssl_key, server_side=True)
+    httpd.socket = ssl.wrap_socket(httpd.socket, certfile=certfile, keyfile=keyfile, server_side=True)
