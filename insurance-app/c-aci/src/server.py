@@ -11,13 +11,9 @@ import ssl
 import cgi
 import json
 import requests
-import time
 
 import argparse
-import tempfile
 import crypto
-
-import os
 
 def attest_data(uds_sock, report_data: bytes) -> bytes:
   path = f"unix://{uds_sock}"
@@ -32,11 +28,9 @@ def register_with_acl(url, keypath, certpath, attestation, platform_certs, uvm_e
     'platform_certificates': base64.b64encode(platform_certs).decode('ascii'),
     'uvm_endorsements': base64.b64encode(uvm_endorsements).decode('ascii')
   }
-  print(payload)
-  print(f"Registering with ACL at: {url}")
-  return True
-  response = requests.put(url, cert=(certpath, keypath), json=payload)
-
+  register_url = url + "/app/processor/register"
+  print(f"Registering with ACL at: {register_url}")
+  response = requests.put(register_url, cert=(certpath, keypath), json=payload)
   return response.status_code == 200
 
 def process_incident(incident, policy):
@@ -44,7 +38,7 @@ def process_incident(incident, policy):
   return 100
 
 class Handler(SimpleHTTPRequestHandler):
-  acl_register_decision_url = None
+  acl_url = None
 
   def do_POST(self):
     content_length = int(self.headers['Content-Length'])
@@ -63,71 +57,21 @@ class Handler(SimpleHTTPRequestHandler):
     result = process_incident(request_data['incident'], request_data['policy'])
 
     # Register decision with ACL app, repeat until successful
-    request_url = self.acl_register_decision_url % request_data['caseId']
+    request_url = self.acl_url + f"/app/incident/{request_data['caseId']}/decision"
     request_body = {
         'incidentFingerprint':hashlib.sha256(request_data['incident']),
         'policy': request_data['policy'],
         'decision': str(result)
       }
     print(f"Registering decision with ACL at: {request_url}")
-    print(request_body)
-    #while(requests.put(request_url, json= request_body).status_code != 200):
-    #  time.sleep(1000) # TODO non-blocking
 
-    self.send_response(200)
+    response = requests.put(request_url, json= request_body)
+    if response.status_code != 200:
+      print("Failed to register decision")
+      self.send_error(400, message="Failed to register decision")
+    else:
+      self.send_response(200)
 
-def generate_or_read_cert(credential_root):
-  keypath = None
-  certpath = None
-  if credential_root is not None:
-    keypath = f"{credential_root}.privk.pem"
-    certpath = f"{credential_root}.certpath.pem"
-
-  # Files exist so just use them
-  if keypath and os.path.isfile(keypath) and \
-       certpath and os.path.isfile(certpath):
-    return keypath, certpath
-
-  # Files don't exist so write to them
-  if (keypath and not os.path.isfile(keypath)) or \
-     (certpath and not os.path.isfile(certpath)):
-    # TODO ensure this is correct
-    privk_pem_str, _ = crypto.generate_rsa_keypair(2048)
-    cert_pem_str = crypto.generate_cert(privk_pem_str)
-
-    # TODO delete
-    print(privk_pem_str)
-    print(cert_pem_str)
-
-    with open(keypath, "w") as keyfile, \
-         open(certpath, "w") as certfile:
-      keyfile.write(privk_pem_str)
-      certfile.write(cert_pem_str)
-
-    return keypath, certpath
-
-  # Generate an ephemeral key
-  if keypath == None:
-    with tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as keyfile, \
-        tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as certfile:
-
-      # TODO ensure this is correct
-      privk_pem_str, _ = crypto.generate_rsa_keypair(2048)
-      cert_pem_str = crypto.generate_cert(privk_pem_str)
-
-      # TODO delete
-      print(privk_pem_str)
-      print(cert_pem_str)
-
-      keyfile.write(privk_pem_str)
-      keyfile.flush()
-      certfile.write(cert_pem_str)
-      certfile.flush()
-
-      keypath = keyfile.name
-      certpath = certfile.name
-
-      return keypath, certpath
   
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
@@ -137,23 +81,24 @@ if __name__ == "__main__":
   parser.add_argument("--credentials-root", type = str, default=None)
   args = parser.parse_args()
 
-  keypath, certpath = generate_or_read_cert(args.credentials_root)
+  keypath, certpath = crypto.generate_or_read_cert(credential_root=args.credentials_root)
 
-  #res = requests.get(f"https://{args.acl_address}/app/user_cert", cert=(certpath, keypath) )
-  #client_fingerprint = res.body.text()
-  client_fingerprint = ""
+  res = requests.get(f"https://{args.acl_address}/app/user_cert", cert=(certpath, keypath) )
+  assert(res.status_code == 200)
+  client_fingerprint = res.body.text()
+  #client_fingerprint = "82:8C:80:4E:E3:F1:F3:75:DE:81:13:08:CD:17:60:10:02:DA:F3:E8:E1:A8:31:6E:2A:57:2F:47:D8:97:82:8F"
 
-  attest_report = attest_data(args.uds_sock, hashlib.sha256(client_fingerprint).digest())
+  attest_report = attest_data(args.uds_sock, hashlib.sha256(client_fingerprint.encode('utf-8')).digest())
 
   register_with_acl(
-    args.acl_register_processor_url,
+    args.acl_url,
     keypath,
     certpath,
     attest_report.attestation,
     attest_report.platform_certificates,
     attest_report.uvm_endorsements)
 
-  Handler.acl_register_decision_url = args.acl_register_decision_url
+  Handler.acl_url = args.acl_url
 
   [host,port] = args.listen.split(':')
   httpd = HTTPServer((host, port), Handler)

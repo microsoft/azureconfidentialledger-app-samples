@@ -1,12 +1,6 @@
 import * as ccfapp from "@microsoft/ccf-app";
 import { ccf } from "@microsoft/ccf-app/global";
-import {
-  equal_uint8array,
-  ErrorResponse,
-  errorResponse,
-  Result,
-  result_error,
-} from "./common";
+import { equal_uint8array, ErrorResponse, errorResponse } from "./common";
 import {
   snp_attestation,
   SnpAttestationResult,
@@ -365,8 +359,4 @@ export function addProcessor(
       body: "Exception occurred: " + error.message,
     };
   }
-}
-
-export function verifyProcessor(processor_cert: string): boolean {
-  return processors.has(processor_cert);
 }

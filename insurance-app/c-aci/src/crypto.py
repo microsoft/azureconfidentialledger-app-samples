@@ -20,6 +20,9 @@ from cryptography.hazmat.primitives.serialization import (
 )
 from cryptography.x509.oid import NameOID
 
+import os
+import tempfile
+
 _RECOMMENDED_RSA_PUBLIC_EXPONENT = 65537
 
 def generate_rsa_keypair(key_size: int) -> Tuple[str, str]:
@@ -62,3 +65,55 @@ def generate_cert(
     )
 
     return cert.public_bytes(Encoding.PEM).decode("ascii")
+
+def generate_or_read_cert(credential_root=None):
+  keypath = None
+  certpath = None
+  if credential_root is not None:
+    keypath = f"{credential_root}.privk.pem"
+    certpath = f"{credential_root}.certpath.pem"
+
+  # Files exist so just use them
+  if keypath and os.path.isfile(keypath) and \
+       certpath and os.path.isfile(certpath):
+    print("Using stored credentials")
+    return keypath, certpath
+
+  # Files don't exist so write to them
+  if (keypath and not os.path.isfile(keypath)) or \
+     (certpath and not os.path.isfile(certpath)):
+    print("Creating new credentials")
+    # TODO ensure this is correct
+    privk_pem_str, _ = generate_rsa_keypair(2048)
+    cert_pem_str = generate_cert(privk_pem_str)
+
+    # TODO delete
+    print(privk_pem_str)
+    print(cert_pem_str)
+
+    with open(keypath, "w") as keyfile, \
+         open(certpath, "w") as certfile:
+      keyfile.write(privk_pem_str)
+      certfile.write(cert_pem_str)
+
+    return keypath, certpath
+
+  # Generate an ephemeral key
+  if keypath == None:
+    print("Using ephemeral credentials")
+    with tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as keyfile, \
+        tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as certfile:
+
+      # TODO ensure this is correct
+      privk_pem_str, _ = generate_rsa_keypair(2048)
+      cert_pem_str = generate_cert(privk_pem_str)
+
+      keyfile.write(privk_pem_str)
+      keyfile.flush()
+      certfile.write(cert_pem_str)
+      certfile.flush()
+
+      keypath = keyfile.name
+      certpath = certfile.name
+
+      return keypath, certpath

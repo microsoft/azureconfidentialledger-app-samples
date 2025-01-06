@@ -1,20 +1,32 @@
 import * as ccfapp from "@microsoft/ccf-app";
-import * as ccfcrypto from "@microsoft/ccf-app/crypto"
-import { ccf } from "@microsoft/ccf-app/global";
-import { ErrorResponse, errorResponse, Result, result_ok,  result_error } from "./common";
-import { getPolicy, verifyProcessor} from "./config";
+import {
+  ErrorResponse,
+  errorResponse,
+  Result,
+  result_ok,
+  result_error,
+} from "./common";
+import { getPolicy, isValidProcessor } from "./config";
 
 const DIGEST_ALGORITHM = "SHA-256";
 
-const kvCaseId = ccfapp.typedKv("caseId", ccfapp.string, ccfapp.int32)
+const kvCaseId = ccfapp.typedKv("caseId", ccfapp.string, ccfapp.int32);
 
 interface CaseMetadata {
   incident: string;
   policy: string;
 }
-const caseMetadata = ccfapp.typedKv("caseMetadata", ccfapp.string, ccfapp.json<CaseMetadata>());
+const caseMetadata = ccfapp.typedKv(
+  "caseMetadata",
+  ccfapp.string,
+  ccfapp.json<CaseMetadata>()
+);
 
-const caseDecision = ccfapp.typedKv("caseDecision", ccfapp.string, ccfapp.float32);
+const caseDecision = ccfapp.typedKv(
+  "caseDecision",
+  ccfapp.string,
+  ccfapp.float32
+);
 
 interface ReqAddIncident {
   incidentFingerprint: string;
@@ -26,14 +38,14 @@ interface RespAddIncident {
 export function addIncident(
   request: ccfapp.Request<ReqAddIncident>
 ): ccfapp.Response<RespAddIncident | ErrorResponse> {
-  const validation = validateReqAddIncident(request)
+  const validation = validateReqAddIncident(request);
   if (!validation.ok) {
-    return errorResponse(400, validation.value)
+    return errorResponse(400, validation.value);
   }
 
   var case_id_int = kvCaseId.get("default");
   if (case_id_int === undefined) {
-    case_id_int = 0
+    case_id_int = 0;
   }
   kvCaseId.set("default", case_id_int + 1);
   const case_id = String(case_id_int);
@@ -51,7 +63,6 @@ export function addIncident(
     policy: policy,
   });
 
-
   return {
     statusCode: 200,
     body: {
@@ -66,11 +77,11 @@ export function getMetadata(
 ): ccfapp.Response<CaseMetadata | ErrorResponse> {
   const validation = validateGetMetadata(request);
   if (!validation.ok) {
-    return errorResponse(400, validation.value)
+    return errorResponse(400, validation.value);
   }
 
   const caseId = request.params["caseId"];
-  const metadata : CaseMetadata = caseMetadata.get(caseId);
+  const metadata: CaseMetadata = caseMetadata.get(caseId);
   if (metadata === undefined) {
     return errorResponse(400, "Case number not found");
   }
@@ -94,7 +105,9 @@ export function putCaseDecision(
   }
 
   const callerId = acl.certUtils.convertToAclFingerprintFormat();
-  if(!verifyProcessor(callerId)) { return errorResponse(403, "Processor invalid"); }
+  if (!isValidProcessor(callerId)) {
+    return errorResponse(403, "Processor invalid");
+  }
 
   const body = request.body.json();
   const caseId = request.params["caseId"];
@@ -110,7 +123,7 @@ export function putCaseDecision(
   if (!(metadata.policy === body.policy)) {
     return errorResponse(400, "Policy fingerprint not match.");
   }
-  if (caseDecision.has(caseId)){
+  if (caseDecision.has(caseId)) {
     return errorResponse(400, "Already stored decision");
   }
 
@@ -122,7 +135,9 @@ export function putCaseDecision(
 
 export function getCaseDecision(
   request: ccfapp.Request
-): ccfapp.Response<{decision:string, decisionVersion: number} | ErrorResponse> {
+): ccfapp.Response<
+  { decision: string; decisionVersion: number } | ErrorResponse
+> {
   const validation = valdiateGetCaseDecision(request);
   if (!validation.ok) {
     return errorResponse(400, validation.value);
@@ -139,56 +154,76 @@ export function getCaseDecision(
   const prevVersion = caseDecision.getVersionOfPreviousWrite(caseId);
   // TODO turn into a receipt
 
-  return {
-    statusCode: 200,
-    body: {
-      decision: decision ? "Approved" : "Rejected",
-      decisionVersion: prevVersion
-    },
-  };
+  if (decision > 0) {
+    return {
+      statusCode: 200,
+      body: {
+        decision: `Approved for ${decision} USD`,
+        decisionVersion: prevVersion,
+      },
+    };
+  } else {
+    return {
+      statusCode: 200,
+      body: {
+        decision: `Denied`,
+        decisionVersion: prevVersion,
+      },
+    };
+  }
 }
 
-function validateReqAddIncident(req : ccfapp.Request<ReqAddIncident>) : Result<string> {
+function validateReqAddIncident(
+  req: ccfapp.Request<ReqAddIncident>
+): Result<string> {
   try {
     var body = req.body.json();
   } catch (error) {
     return result_error("Failed while parsing body: " + error.message);
   }
-  if (!body.incidentFingerprint || typeof body.incidentFingerprint !== "string") {
+  if (
+    !body.incidentFingerprint ||
+    typeof body.incidentFingerprint !== "string"
+  ) {
     return result_error("Missing or invalid incidentFingerprint.");
   }
   return result_ok();
 }
 
-function validateGetMetadata(req : ccfapp.Request) : Result<string> {
-  const caseId = req.params["caseId"]
-  if(!caseId || typeof caseId !== "string") {
+function validateGetMetadata(req: ccfapp.Request): Result<string> {
+  const caseId = req.params["caseId"];
+  if (!caseId || typeof caseId !== "string") {
     return result_error("Missing or invalid caseId in parameters.");
   }
   return result_ok();
 }
 
-function validateReqPutIncidentDecision(req: ccfapp.Request<ReqPutIncidentDecision>) : Result<string> {
+function validateReqPutIncidentDecision(
+  req: ccfapp.Request<ReqPutIncidentDecision>
+): Result<string> {
   try {
     var body = req.body.json();
   } catch (error) {
     return result_error("Failed while parsing body: " + error.message);
   }
-  if(!body.incidentFingerprint || typeof body.incidentFingerprint !== "string") {
+  if (
+    !body.incidentFingerprint ||
+    typeof body.incidentFingerprint !== "string"
+  ) {
     return result_error("Missing or invalid incidentFingerprint.");
   }
-  if(!body.policy || typeof body.policy !== "string") {
+  if (!body.policy || typeof body.policy !== "string") {
     return result_error("Missing or invalid policy.");
   }
-  if(!body.decision || typeof body.decision != "number") {
+  if (!body.decision || typeof body.decision != "number") {
     return result_error("Missing or invalid decision.");
   }
   return result_ok();
-} 
+}
 
-function valdiateGetCaseDecision(req : ccfapp.Request) : Result<string> {
-  const caseId = req.params["caseId"]
-  if(!caseId || typeof caseId !== "string") {
+function valdiateGetCaseDecision(req: ccfapp.Request): Result<string> {
+  const caseId = req.params["caseId"];
+  if (!caseId || typeof caseId !== "string") {
     return result_error("Missing or invalid caseId in parameters.");
   }
   return result_ok();
