@@ -2,3 +2,4 @@ grpcio
 protobuf
 pyOpenSSL
 requests
+llama-cpp-python

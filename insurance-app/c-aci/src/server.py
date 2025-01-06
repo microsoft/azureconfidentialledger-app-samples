@@ -15,6 +15,8 @@ import requests
 import argparse
 import crypto
 
+from phi import process_incident
+
 def attest_data(uds_sock, report_data: bytes) -> bytes:
   path = f"unix://{uds_sock}"
   print(f"Getting attestation from: {path}")
@@ -32,10 +34,6 @@ def register_with_acl(url, keypath, certpath, attestation, platform_certs, uvm_e
   print(f"Registering with ACL at: {register_url}")
   response = requests.put(register_url, cert=(certpath, keypath), json=payload)
   return response.status_code == 200
-
-def process_incident(incident, policy):
-  # TODO process claim
-  return 100
 
 class Handler(SimpleHTTPRequestHandler):
   acl_url = None
