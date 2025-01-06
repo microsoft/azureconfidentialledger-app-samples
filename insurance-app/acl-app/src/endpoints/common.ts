@@ -32,3 +32,16 @@ export function result_error<T>(msg : T) : Result<T> {
     value: msg,
   }
 }
+
+export function equal_uint8array(a : Uint8Array,b : Uint8Array) : boolean{
+  if (a.length != b.length) { return false; }
+  let dv1 = new Uint8Array(a);
+  let dv2 = new Uint8Array(b);
+
+  for (var i = 0; i < a.length; i++) {
+    if (dv1[i] != dv2[i]) {
+      return false;
+    }
+  }
+  return true;
+}

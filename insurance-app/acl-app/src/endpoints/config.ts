@@ -1,13 +1,19 @@
 import * as ccfapp from "@microsoft/ccf-app";
 import { ccf } from "@microsoft/ccf-app/global";
-import { ErrorResponse, errorResponse, Result, result_error } from "./common";
+import {
+  equal_uint8array,
+  ErrorResponse,
+  errorResponse,
+  Result,
+  result_error,
+} from "./common";
 import {
   snp_attestation,
   SnpAttestationResult,
 } from "@microsoft/ccf-app/global";
 import { Base64 } from "js-base64";
 
-const SINGLETON_KEY = 'default'
+const SINGLETON_KEY = "default";
 
 interface UvmEndorsements {
   did: string;
@@ -16,19 +22,23 @@ interface UvmEndorsements {
 }
 
 interface ValidProcessorProperties {
-  uvm_endorsements : UvmEndorsements,
-  measurement : string[],
-  policy : string[]
+  uvm_endorsements: UvmEndorsements;
+  measurement: string[];
+  policy: string[];
 }
 
 interface ProcessorProperties {
   uvm_endorsements: UvmEndorsements;
   measurement: string;
-  policy : string
+  policy: string;
 }
 
 const userPolicies = ccfapp.typedKv("userPolicy", ccfapp.string, ccfapp.string);
-const validProcessorProperties = ccfapp.typedKv("validProcessorProperties", ccfapp.string, ccfapp.json<ValidProcessorProperties>());
+const validProcessorProperties = ccfapp.typedKv(
+  "validProcessorProperties",
+  ccfapp.string,
+  ccfapp.json<ValidProcessorProperties>()
+);
 const processors = ccfapp.typedKv(
   "validProcessors",
   ccfapp.string,
@@ -65,12 +75,17 @@ export function setUserPolicy(
     );
   }
 
-  const validation = validateReqRegisterUserPolicy(request);
-  if (!validation.ok) {
-    return errorResponse(400, validation.value);
+  try {
+    var body = request.body.json();
+    if (!body.cert || typeof body.cert !== "string") {
+      return errorResponse(400, "Missing or invalid user certificate.");
+    }
+    if (!body.policy || typeof body.policy !== "string") {
+      return errorResponse(400, "Missing or invalid policy.");
+    }
+  } catch (error) {
+    return errorResponse(400, "Failed while parsing body: " + error.message);
   }
-
-  const body = request.body.json();
 
   // Note: cannot make user or processor 'users' as this requires write access to TPAL users
   //// Register user with roles
@@ -100,26 +115,43 @@ export function getUserPolicy(
 
 export function isValidProcessor(processor_cert: string): boolean {
   let properties = processors.get(processor_cert);
-  return isValidProcessorProperties(properties);
-}
-
-function isValidProcessorProperties(properties: ProcessorProperties) : boolean {
-  let valid_properties = validProcessorProperties.get(SINGLETON_KEY)
-  if (properties.uvm_endorsements !== valid_properties.uvm_endorsements) {
-    return false
-  }
-  if (!valid_properties.measurement.includes(properties.measurement)) {
-    return false
-  }
-  if (!valid_properties.policy.includes(properties.policy)) {
-    return false
+  try {
+    validateProcessorProperties(properties);
+  } catch (error) {
+    return false;
   }
   return true;
 }
 
+function validateProcessorProperties(properties: ProcessorProperties) {
+  let valid_properties = validProcessorProperties.get(SINGLETON_KEY);
+  if (
+    properties.uvm_endorsements.did !== valid_properties.uvm_endorsements.did
+  ) {
+    throw new Error("DID did not match");
+  }
+  if (
+    properties.uvm_endorsements.feed !== valid_properties.uvm_endorsements.feed
+  ) {
+    throw new Error("FEED did not match");
+  }
+  if (
+    properties.uvm_endorsements.svn !== valid_properties.uvm_endorsements.svn
+  ) {
+    throw new Error("SVN did not match");
+  }
+
+  if (!valid_properties.measurement.includes(properties.measurement)) {
+    throw new Error("Mesaurement is invalid");
+  }
+  if (!valid_properties.policy.includes(properties.policy)) {
+    throw new Error("Policy is invalid");
+  }
+}
+
 export function setValidProcessorPolicy(
   request: ccfapp.Request<ValidProcessorProperties>
-) : ccfapp.Response<any | ErrorResponse> {
+): ccfapp.Response<any | ErrorResponse> {
   const callerId = acl.certUtils.convertToAclFingerprintFormat();
   const actionPermitted = acl.authz.actionAllowed(callerId, "/processor/write");
 
@@ -136,38 +168,58 @@ export function setValidProcessorPolicy(
     if (!body.uvm_endorsements) {
       return errorResponse(400, "Missing uvm endorsements");
     }
-    if (!body.uvm_endorsements.did || typeof body.uvm_endorsements.did !== "string") {
+    if (
+      !body.uvm_endorsements.did ||
+      typeof body.uvm_endorsements.did !== "string"
+    ) {
       return errorResponse(400, "Invalid uvm did.");
     }
-    if (!body.uvm_endorsements.feed || typeof body.uvm_endorsements.feed !== "string") {
+    if (
+      !body.uvm_endorsements.feed ||
+      typeof body.uvm_endorsements.feed !== "string"
+    ) {
       return errorResponse(400, "Invalid uvm feed.");
     }
-    if (!body.uvm_endorsements.svn || typeof body.uvm_endorsements.svn !== "string") {
+    if (
+      !body.uvm_endorsements.svn ||
+      typeof body.uvm_endorsements.svn !== "string"
+    ) {
       return errorResponse(400, "Invalid uvm svn.");
     }
-    properties.uvm_endorsements = body.uvm_endorsements;
 
-    if(!body.measurement || !Array.isArray(body.measurement) || !body.measurement.every(item => typeof item === 'string')) {
-      return errorResponse(400, "Invalid or missing measurement")
+    if (
+      !body.measurement ||
+      !Array.isArray(body.measurement) ||
+      !body.measurement.every((item) => typeof item === "string")
+    ) {
+      return errorResponse(400, "Invalid or missing measurement");
     }
-    if(!body.policy || !Array.isArray(body.policy) || !body.policy.every(item => typeof item === 'string')) {
-      return errorResponse(400, "Invalid or missing measurement")
+    if (
+      !body.policy ||
+      !Array.isArray(body.policy) ||
+      !body.policy.every((item) => typeof item === "string")
+    ) {
+      return errorResponse(400, "Invalid or missing measurement");
     }
     properties = body;
   } catch (error) {
-    return errorResponse(400, "Error while parsing properties");
+    return errorResponse(
+      400,
+      "Error while parsing properties: " + error.message
+    );
   }
 
   validProcessorProperties.set(SINGLETON_KEY, properties);
+  return { statusCode: 200 };
 }
 
 export function getValidProcessorPolicy(
   request: ccfapp.Request
-) : ccfapp.Response<ValidProcessorProperties> {
+): ccfapp.Response<ValidProcessorProperties> {
   return {
     statusCode: 200,
-    body : validProcessorProperties.get(SINGLETON_KEY)
-  }
+    body: validProcessorProperties.get(SINGLETON_KEY),
+  };
 }
 
 interface ReqAddProcessor {
@@ -179,133 +231,142 @@ interface ReqAddProcessor {
 export function addProcessor(
   request: ccfapp.Request<ReqAddProcessor>
 ): ccfapp.Response<string | ErrorResponse> {
-  let body;
   try {
-    if (!request.body) {
-      return errorResponse(400, "Request body undefined.");
+    let body;
+    try {
+      if (!request.body) {
+        return errorResponse(400, "Request body undefined.");
+      }
+      body = request.body.json();
+    } catch (error) {
+      return errorResponse(400, "Failed while parsing body: " + error.message);
     }
-    body = request.body.json();
-  } catch (error) {
-    return errorResponse(400, "Failed while parsing body: " + error.message);
-  }
 
-  let evidence; // attestation report
-  try {
-    if (!body.attestation || typeof body.attestation !== "string") {
-      return errorResponse(400, "Missing or invalid attestation.");
+    let evidence: ArrayBuffer; // attestation report
+    try {
+      if (!body.attestation || typeof body.attestation !== "string") {
+        return errorResponse(400, "Missing or invalid attestation.");
+      }
+      evidence = ccfapp
+        .typedArray(Uint8Array)
+        .encode(Base64.toUint8Array(body.attestation));
+    } catch (error) {
+      return errorResponse(
+        400,
+        "Exception while parsing attestation: " + error.message
+      );
     }
-    evidence = ccfapp
-      .typedArray(Uint8Array)
-      .encode(Base64.toUint8Array(body.attestation));
-  } catch (error) {
-    return errorResponse(
-      400,
-      "Exception while parsing attestation: " + error.message
-    );
-  }
 
-  let endorsements; // platform_certificates
-  try {
-    if (
-      !body.platform_certificates ||
-      typeof body.platform_certificates !== "string"
-    ) {
-      return errorResponse(400, "Missing or invalid platform_certificates.");
+    let endorsements: ArrayBuffer; // platform_certificates
+    try {
+      if (
+        !body.platform_certificates ||
+        typeof body.platform_certificates !== "string"
+      ) {
+        return errorResponse(400, "Missing or invalid platform_certificates.");
+      }
+      endorsements = ccfapp
+        .typedArray(Uint8Array)
+        .encode(Base64.toUint8Array(body.platform_certificates));
+    } catch (error) {
+      return errorResponse(
+        400,
+        "Exception while parsing attestation: " + error.message
+      );
     }
-    endorsements = ccfapp
-      .typedArray(Uint8Array)
-      .encode(Base64.toUint8Array(body.platform_certificates));
-  } catch (error) {
-    return errorResponse(
-      400,
-      "Exception while parsing attestation: " + error.message
-    );
-  }
 
-  let uvm_endorsements;
-  try {
-    if (!body.uvm_endorsements || typeof body.uvm_endorsements !== "string") {
-      return errorResponse(400, "Missing or invalid uvm_endorsements.");
+    let uvm_endorsements: ArrayBuffer;
+    try {
+      if (!body.uvm_endorsements || typeof body.uvm_endorsements !== "string") {
+        return errorResponse(400, "Missing or invalid uvm_endorsements.");
+      }
+      uvm_endorsements = ccfapp
+        .typedArray(Uint8Array)
+        .encode(Base64.toUint8Array(body.uvm_endorsements));
+    } catch (error) {
+      return errorResponse(
+        400,
+        "Exception while parsing attestation: " + error.message
+      );
     }
-    uvm_endorsements = ccfapp
+
+    let attestation_result: SnpAttestationResult;
+    try {
+      attestation_result = snp_attestation.verifySnpAttestation(
+        evidence,
+        endorsements,
+        uvm_endorsements
+      );
+    } catch (error) {
+      return errorResponse(
+        400,
+        "Failed to verify attestation with error: " + error.message
+      );
+    }
+
+    // Check that certificates match
+    const report_data = ccfapp
       .typedArray(Uint8Array)
-      .encode(Base64.toUint8Array(body.uvm_endorsements));
+      .decode(attestation_result.attestation.report_data);
+    const callerId = acl.certUtils.convertToAclFingerprintFormat();
+    // In theory this is a utf-8 encoding
+    const array_buf_callerId = ccfapp.string.encode(callerId);
+    const expected_report_data = ccfapp
+      .typedArray(Uint8Array)
+      .decode(ccf.crypto.digest("SHA-256", array_buf_callerId));
+    if (equal_uint8array(expected_report_data, report_data.slice(0, 256))) {
+      return errorResponse(
+        400,
+        "Report data " +
+          JSON.stringify({
+            report_data: Base64.fromUint8Array(
+              ccfapp
+                .typedArray(Uint8Array)
+                .decode(
+                  attestation_result.attestation.report_data.slice(0, 255)
+                )
+            ),
+            cert: Base64.fromUint8Array(
+              ccfapp.typedArray(Uint8Array).decode(expected_report_data)
+            ),
+          })
+      );
+    }
+
+    let measurement_b64 = Base64.fromUint8Array(
+      ccfapp
+        .typedArray(Uint8Array)
+        .decode(attestation_result.attestation.measurement)
+    );
+    let policy_b64 = Base64.fromUint8Array(
+      ccfapp
+        .typedArray(Uint8Array)
+        .decode(attestation_result.attestation.host_data)
+    );
+    let properties = {
+      uvm_endorsements: attestation_result.uvm_endorsements,
+      measurement: measurement_b64,
+      policy: policy_b64,
+    };
+    try {
+      validateProcessorProperties(properties);
+    } catch (error) {
+      return errorResponse(400, error.message);
+    }
+
+    const processorCertFingerprint =
+      acl.certUtils.convertToAclFingerprintFormat();
+    processors.set(processorCertFingerprint, properties);
+
+    return { statusCode: 200 };
   } catch (error) {
-    return errorResponse(
-      400,
-      "Exception while parsing attestation: " + error.message
-    );
+    return {
+      statusCode: 500,
+      body: "Exception occurred: " + error.message,
+    };
   }
-
-  let attestation_result: SnpAttestationResult;
-  try {
-    attestation_result = snp_attestation.verifySnpAttestation(
-      evidence,
-      endorsements,
-      uvm_endorsements
-    );
-  } catch (error) {
-    return errorResponse(
-      400,
-      "Failed to verify attestation with error: " + error.message
-    );
-  }
-
-  return errorResponse(400, "DEBUG:" + JSON.stringify(attestation_result))
-
-  // Check that certificates match
-  if (
-    ccf.crypto.digest("SHA-512", request.caller.cert) !==
-    attestation_result.attestation.report_data
-  ) {
-    return errorResponse(
-      400,
-      "Report data does not match SHA-512 hash of caller certificate."
-    );
-  }
-
-  let measurement_b64 = Base64.fromUint8Array(
-    ccfapp
-      .typedArray(Uint8Array)
-      .decode(attestation_result.attestation.measurement)
-  );
-  let policy_b64 = Base64.fromUint8Array(
-    ccfapp
-      .typedArray(Uint8Array)
-      .decode(attestation_result.attestation.host_data)
-  );
-  let properties = {
-    uvm_endorsements: uvm_endorsements,
-    measurement : measurement_b64,
-    policy : policy_b64,
-  }
-  if (!isValidProcessorProperties(properties)){
-    return errorResponse(400, "Properties of container are invalid");
-  }
-
-  const processorCertFingerprint =
-    acl.certUtils.convertToAclFingerprintFormat();
-  processors.set(processorCertFingerprint, properties);
-
-  return { statusCode: 200 };
 }
 
 export function verifyProcessor(processor_cert: string): boolean {
   return processors.has(processor_cert);
-}
-
-function validateReqRegisterUserPolicy(
-  req: ccfapp.Request<ReqRegisterUserPolicy>
-): Result<string> {
-  try {
-    var body = req.body.json();
-  } catch (error) {
-    return result_error("Failed while parsing body: " + error.message);
-  }
-  if (!body.cert || typeof body.cert !== "string") {
-    return result_error("Missing or invalid user certificate.");
-  }
-  if (!body.policy || typeof body.policy !== "string") {
-    return result_error("Missing or invalid policy.");
-  }
 }

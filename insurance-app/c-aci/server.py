@@ -33,9 +33,10 @@ def register_with_acl(url, keypath, certpath, attestation, platform_certs, uvm_e
     'uvm_endorsements': base64.b64encode(uvm_endorsements).decode('ascii')
   }
   print(payload)
-  print(f"Registering with ACL at: {url}")
+  register_url = url + "/app/processor/register"
+  print(f"Registering with ACL at: {register_url}")
   return True
-  response = requests.put(url, cert=(certpath, keypath), json=payload)
+  response = requests.put(register_url, cert=(certpath, keypath), json=payload)
 
   return response.status_code == 200
 
@@ -44,7 +45,7 @@ def process_incident(incident, policy):
   return 100
 
 class Handler(SimpleHTTPRequestHandler):
-  acl_register_decision_url = None
+  acl_url = None
 
   def do_POST(self):
     content_length = int(self.headers['Content-Length'])
@@ -63,7 +64,7 @@ class Handler(SimpleHTTPRequestHandler):
     result = process_incident(request_data['incident'], request_data['policy'])
 
     # Register decision with ACL app, repeat until successful
-    request_url = self.acl_register_decision_url % request_data['caseId']
+    request_url = self.acl_url + f"/app/incident/{request_data['caseId']}/decision"
     request_body = {
         'incidentFingerprint':hashlib.sha256(request_data['incident']),
         'policy': request_data['policy'],
@@ -86,11 +87,13 @@ def generate_or_read_cert(credential_root):
   # Files exist so just use them
   if keypath and os.path.isfile(keypath) and \
        certpath and os.path.isfile(certpath):
+    print("Using stored credentials")
     return keypath, certpath
 
   # Files don't exist so write to them
   if (keypath and not os.path.isfile(keypath)) or \
      (certpath and not os.path.isfile(certpath)):
+    print("Creating new credentials")
     # TODO ensure this is correct
     privk_pem_str, _ = crypto.generate_rsa_keypair(2048)
     cert_pem_str = crypto.generate_cert(privk_pem_str)
@@ -108,6 +111,7 @@ def generate_or_read_cert(credential_root):
 
   # Generate an ephemeral key
   if keypath == None:
+    print("Using ephemeral credentials")
     with tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as keyfile, \
         tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as certfile:
 
@@ -141,19 +145,19 @@ if __name__ == "__main__":
 
   #res = requests.get(f"https://{args.acl_address}/app/user_cert", cert=(certpath, keypath) )
   #client_fingerprint = res.body.text()
-  client_fingerprint = ""
+  client_fingerprint = "82:8C:80:4E:E3:F1:F3:75:DE:81:13:08:CD:17:60:10:02:DA:F3:E8:E1:A8:31:6E:2A:57:2F:47:D8:97:82:8F"
 
-  attest_report = attest_data(args.uds_sock, hashlib.sha256(client_fingerprint).digest())
+  attest_report = attest_data(args.uds_sock, hashlib.sha256(client_fingerprint.encode('utf-8')).digest())
 
   register_with_acl(
-    args.acl_register_processor_url,
+    args.acl_url,
     keypath,
     certpath,
     attest_report.attestation,
     attest_report.platform_certificates,
     attest_report.uvm_endorsements)
 
-  Handler.acl_register_decision_url = args.acl_register_decision_url
+  Handler.acl_url = args.acl_url
 
   [host,port] = args.listen.split(':')
   httpd = HTTPServer((host, port), Handler)
