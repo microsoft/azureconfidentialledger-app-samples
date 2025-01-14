@@ -1,10 +1,9 @@
 import * as ccfapp from "@microsoft/ccf-app";
 
 export interface Account {
-  balance: number;
-  collateral: number;
-  debt: number;
-  wallet: number;
+  balances: Record<string, number>; // Token balances keyed by token address
+  collateral: Record<string, number>;              // Total collateral locked
+  debt: number;                    // Total debt
 }
 
 export const accountTable = ccfapp.typedKv(
@@ -15,9 +14,14 @@ export const accountTable = ccfapp.typedKv(
 
 export function getOrCreateAccount(userId: string): Account {
   if (!accountTable.has(userId)) {
-    const account: Account = { balance: 0, collateral: 0, debt: 0, wallet: 0 };
-    accountTable.set(userId, account);
-    return account;
+    const newAccount: Account = {
+      balances: {},  // Initialize empty balances
+      collateral: {},
+      debt: 0,
+    };
+    accountTable.set(userId, newAccount);
+    return newAccount;
   }
+
   return accountTable.get(userId) as Account;
 }
