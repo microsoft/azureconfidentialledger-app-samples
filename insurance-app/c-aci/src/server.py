@@ -30,9 +30,10 @@ def register_with_acl(url, keypath, certpath, attestation, platform_certs, uvm_e
     'platform_certificates': base64.b64encode(platform_certs).decode('ascii'),
     'uvm_endorsements': base64.b64encode(uvm_endorsements).decode('ascii')
   }
-  register_url = url + "/app/processor/register"
+  register_url = f"https://{url}/app/processor/register"
   print(f"Registering with ACL at: {register_url}")
-  response = requests.put(register_url, cert=(certpath, keypath), json=payload)
+  response = requests.put(register_url, cert=(certpath, keypath), json=payload, verify=False)
+  print(response)
   return response.status_code == 200
 
 class Handler(SimpleHTTPRequestHandler):
@@ -48,22 +49,23 @@ class Handler(SimpleHTTPRequestHandler):
     # Read and validate body
     body = self.rfile.read(content_length)
     request_data = json.loads(body)
-    if not 'incident' in request_data.keys: return self.send_error(400, 'No incident')
-    if not 'policy' in request_data.keys: return self.send_error(400, 'No policy')
-    if not 'caseId' in request_data.keys: return self.send_error(400, 'No caseId')
+    if not 'incident' in request_data: return self.send_error(400, 'No incident')
+    if not 'policy' in request_data: return self.send_error(400, 'No policy')
+    if not 'caseId' in request_data: return self.send_error(400, 'No caseId')
 
     result = process_incident(request_data['incident'], request_data['policy'])
 
     # Register decision with ACL app, repeat until successful
-    request_url = self.acl_url + f"/app/incident/{request_data['caseId']}/decision"
+    request_url = f"https://{self.acl_url}/app/incident/{request_data['caseId']}/decision"
     request_body = {
-        'incidentFingerprint':hashlib.sha256(request_data['incident']),
+        'incident': request_data['incident'],
         'policy': request_data['policy'],
         'decision': str(result)
       }
     print(f"Registering decision with ACL at: {request_url}")
 
     response = requests.put(request_url, json= request_body)
+    print(response)
     if response.status_code != 200:
       print("Failed to register decision")
       self.send_error(400, message="Failed to register decision")
@@ -81,9 +83,10 @@ if __name__ == "__main__":
 
   keypath, certpath = crypto.generate_or_read_cert(credential_root=args.credentials_root)
 
-  res = requests.get(f"https://{args.acl_address}/app/user_cert", cert=(certpath, keypath) )
+  res = requests.get(f"https://{args.acl_url}/app/user_cert", cert=(certpath, keypath), verify=False)
+  print(res)
   assert(res.status_code == 200)
-  client_fingerprint = res.body.text()
+  client_fingerprint = res.text
   #client_fingerprint = "82:8C:80:4E:E3:F1:F3:75:DE:81:13:08:CD:17:60:10:02:DA:F3:E8:E1:A8:31:6E:2A:57:2F:47:D8:97:82:8F"
 
   attest_report = attest_data(args.uds_sock, hashlib.sha256(client_fingerprint.encode('utf-8')).digest())
@@ -99,5 +102,6 @@ if __name__ == "__main__":
   Handler.acl_url = args.acl_url
 
   [host,port] = args.listen.split(':')
-  httpd = HTTPServer((host, port), Handler)
-  httpd.socket = ssl.wrap_socket(httpd.socket, certfile=certpath, keyfile=keypath, server_side=True)
+  httpd = HTTPServer((host, int(port)), Handler)
+  #httpd.socket = ssl.wrap_socket(httpd.socket, certfile=certpath, keyfile=keypath, server_side=True)
+  httpd.serve_forever()

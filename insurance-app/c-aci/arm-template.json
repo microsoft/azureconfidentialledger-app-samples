@@ -80,7 +80,7 @@
               "command": [
                 "/bin/sh",
                 "-c",
-                "mkdir /root/.ssh && echo $SSH_ADMIN_KEY >> /root/.ssh/authorized_keys && service ssh start && tail -f /dev/null"
+                "echo $SSH_ADMIN_KEY >> /root/.ssh/authorized_keys && service ssh start && pip install --break-system-packages -r /src/requirements.txt && tail -f /dev/null"
               ],
               "ports": [
                 {
@@ -103,7 +103,7 @@
               "resources": {
                 "requests": {
                   "memoryInGB": 4,
-                  "cpu": 1
+                  "cpu": 4
                 }
               }
             }
@@ -121,7 +121,7 @@
               ],
               "resources": {
                 "requests": {
-                  "memoryInGB": 4,
+                  "memoryInGB": 1,
                   "cpu": 1
                 }
               }

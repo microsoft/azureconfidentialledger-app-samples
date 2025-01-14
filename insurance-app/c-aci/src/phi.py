@@ -59,8 +59,6 @@ def format_prompt(incident, policy):
 def process_incident(incident, policy):
   prompt = format_prompt(incident, policy)
 
-  print(prompt)
-
   result = None
   while True:
       result = llm.create_completion(prompt, max_tokens=100, stop=['<|end|>', '</result>'])

@@ -1,13 +1,26 @@
 #!/usr/bin/env bash
 
-set -x
+ACRPrefix=cjensentest1
+PrimaryName="tpal-test"
+ResourceGroup="cjensen-1"
+DeploymentName="cjensen-1-tpal-test"
 
-az acr build --image tpal-test --registry cjensentest1 --file Dockerfile .
+# Build primary container
+ImageName=${ACRPrefix}.azurecr.io/${PrimaryName}
+docker build -t $ImageName --build-arg HUGGINGFACE_TOKEN=$HUGGINGFACE_TOKEN .
+docker login \
+  -u 00000000-0000-0000-0000-000000000000 \
+  -p $(az acr login --name ${ACRPrefix} --expose-token --output tsv --query accessToken) \
+  ${ACRPrefix}.azurecr.io
+docker push $ImageName
 
+# Deploy primary container and sidecar using ./arm-template.json
 az deployment group create \
-  --resource-group cjensen-1 --name "cjensen-1-2" --parameters name="cjensen-1-2-1" \
+  --resource-group $ResourceGroup --parameters name=${DeploymentName} \
   --template-file arm-template.json \
   --parameters ssh="$(cat ~/.ssh/id_rsa.pub)" \
-  --parameters primary-image="cjensentest1.azurecr.io/tpal-test" \
-  --parameters sidecar-image="cjensentest1.azurecr.io/attestation-sidecar" \
-  --parameters acr-token="$(az acr login --name cjensentest1 --expose-token --output tsv --query accessToken)"
+  --parameters primary-image="$ImageName" \
+  --parameters sidecar-image="${ACRPrefix}.azurecr.io/attestation-sidecar" \
+  --parameters acr-token="$(az acr login --name $ACRPrefix --expose-token --output tsv --query accessToken)"
+
+echo Hosted container on: $(az container show -g $ResourceGroup -n ${DeploymentName} --query ipAddress.ip -o tsv)

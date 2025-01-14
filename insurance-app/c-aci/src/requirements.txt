@@ -2,4 +2,4 @@ grpcio
 protobuf
 pyOpenSSL
 requests
-llama-cpp-python
+llama-cpp-python -C cmake.args="DGGML_AVX=OFF"

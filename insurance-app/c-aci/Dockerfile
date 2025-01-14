@@ -19,9 +19,10 @@ ENV TZ=Europe
 RUN apt update && apt install -y openssh-server
 RUN apt update && apt install -y python3 python3-pip
 
-ADD src/requirements.txt /src/requirements.txt
 
-RUN pip install --break-system-packages -r /src/requirements.txt
+# This must be run in destination container otherwise it will not work on epyc processors
+#ADD src/requirements.txt /src/requirements.txt
+#RUN pip install --break-system-packages -r /src/requirements.txt
 
 WORKDIR /src
 
