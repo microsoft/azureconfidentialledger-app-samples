@@ -11,22 +11,22 @@ policy = "This policy provides comprehensive coverage for damages to the insured
 sample_claims = [ 
   { 
     "incident": "While driving home during a rainstorm, the policyholder's car skidded off the road and hit a utility pole. The impact caused significant damage to the front bumper and the car's electrical system. The incident happened in the evening when visibility was poor.", 
-    "policy": policy,
+    "policy": "This policy provides coverage for damages from accidents, vandalism and unforseen events. Exclusions include natural disasters and intentional or illegal actions.",
     "decision": "approve"
   },
   { 
-    "incident": "The policyholder's car was parked on a slope and, due to a failed parking brake, rolled into another car, causing damage to both cars. The incident took place en route to a mechanic shop to repair the brake.", 
-    "policy": policy,
+    "incident": "The policyholder drove through a flooded street during a hurricane and the car's engine suffered water damage.", 
+    "policy": "This policy covers accidential damage to the insured vehicle. Exclusions include natural disasters.",
     "decision": "deny"
   },
   { 
     "incident": "While reversing out of a parking space, the policyholder accidentially hit another car, causing minor scratches to both vehicles.",
-    "policy": policy,
+    "policy": "This policy covers damage from accidents, but excludes intentional acts.",
     "decision": "approve"
   },
   { 
     "incident": "The policyholder drove through a flooded street despite warnings and the car's engine suffered severe water damage. The incident occurred during heavy rainfall.", 
-    "policy": policy,
+    "policy": "This policy covers damages to the insured vehicle from natural disasters. Exclusions include intentional damage.",
     "decision": "deny"
   }
 ]
