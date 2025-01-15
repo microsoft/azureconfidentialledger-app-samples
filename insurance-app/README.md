@@ -7,6 +7,8 @@ Since these containers are attested, their processing of decisions can be truste
 
 ## Processes
 
+!(./message-flow.svg)
+
 ### Processor registration
 - Processor: Submits attestation for signing key
   - ACL: if valid processor attestation (valid measurement, uvm and policy) store signing key and attestation
