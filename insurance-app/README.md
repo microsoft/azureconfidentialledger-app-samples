@@ -7,7 +7,38 @@ Since these containers are attested, their processing of decisions can be truste
 
 ## Processes
 
-![](./message-flow.svg)
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant A as ACL
+
+    box Gray C-ACI container    
+    participant P as Processor
+    participant S as Attestation Sidecar
+    end
+
+    participant C as Client
+
+    Admin ->> A: Set valid processors
+
+    note over P: Generate key
+    P ->> S: Attest(key)
+    S ->> P: Attestion report
+    P ->> A: Register(attestation)
+    note over A: Verify Attestation<br>using policy
+    
+    Admin ->> A: Register user and policy
+    C ->> A: Report Incident
+
+    P <<-->> A: Poll for incident
+    A ->>+ P: Incident and policy
+    note over P: Evaluate claim<br>using Phi 3
+    P ->>- A: Decision
+
+    C <<-->> A: Poll for decision
+    A ->> C: Decision
+
+```
 
 ### Processor registration
 - Processor: Submits attestation for signing key
