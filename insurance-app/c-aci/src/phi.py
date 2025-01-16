@@ -1,10 +1,6 @@
 from llama_cpp import Llama
 import json
-
-llm = Llama(
-    model_path="./Phi-3-mini-4k-instruct-q4.gguf",
-    n_ctx=1024,
-)
+import itertools
 
 preamble = '''
 <|system|>
@@ -36,28 +32,30 @@ or
 <|assessor|>
 <result>{"result": "deny"}</result><|end|>
 '''
-
-def format_prompt(incident, policy): 
-   return preamble + "\n" + f'''
-<|user|>
-{{"incident": "{incident}", "policy": "{policy}"}}<|end|>
-<|assessor|>
-'''
-
-def process_incident(incident, policy):
-  prompt = preamble + f'\n<|user|>\n{{"incident": "{incident}", "policy": "{policy}"}}<|end|>\n<|accessor|>'
-
-  while True:
-      result = llm.create_completion(prompt, max_tokens=100, stop=['<|end|>', '</result>'])
+  
+class Phi:
+  def __init__(self, model_path="./Phi-3-mini-4k-instruct-q4.gguf"):
+    self.llm = Llama(
+        model_path=model_path,
+        n_ctx=1024,
+    )
+  
+  def process_incident(self, incident, policy, repeats = None) -> str:
+    prompt = preamble + f'\n<|user|>\n{{"incident": "{incident}", "policy": "{policy}"}}<|end|>\n<|accessor|>'
+  
+    for _ in range(repeats) if not repeats else itertools.cycle([1]):
+      result = self.llm.create_completion(prompt, max_tokens=100, stop=['<|end|>', '</result>'])
       print(result)
       try:
-          result = result['choices'][0]['text']
-          result = json.loads(result.split('<result>')[1])
-          if "result" not in result:
-            continue
-          if result["result"].lower() not in {"approve", "deny"}:
-            continue
-          return result["result"].lower()
-      except Exception as e:
-          print(e)
+        result = result['choices'][0]['text']
+        result = json.loads(result.split('<result>')[1])
+        if "result" not in result:
           continue
+        if result["result"].lower() not in {"approve", "deny"}:
+          continue
+        return result["result"].lower()
+      except Exception as e:
+        print(e)
+        continue
+    return "error"
+        

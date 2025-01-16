@@ -41,7 +41,7 @@
       "type": "Microsoft.ContainerInstance/containerGroups",
       "apiVersion": "2022-10-01-preview",
       "name": "[parameters('name')]",
-      "location": "northeurope",
+      "location": "North Europe",
       "identity": {
         "type": "SystemAssigned"
       },

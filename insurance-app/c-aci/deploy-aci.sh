@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 ACRPrefix=cjensentest1
-PrimaryName="tpal-test"
+PrimaryName="tpal-insurance-sample"
 ResourceGroup="cjensen-1"
-DeploymentName="cjensen-1-tpal-test"
+DeploymentName="cjensen-1-tpal-insurance-sample"
 
 # Build primary container
 ImageName=${ACRPrefix}.azurecr.io/${PrimaryName}
