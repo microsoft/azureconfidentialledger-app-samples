@@ -22,12 +22,12 @@ class ProcessorDaemon:
   def __init__(self, uds_sock, acl_url, phi_repeats, model_path=None):
     self.phi = Phi(model_path=model_path) if model_path else Phi()
     self.uds_sock = f"unix://{uds_sock}"
-    self.acl_url = "https://" + acl_url
+    self.acl_url = "http://" + acl_url
 
     keypath, certpath = crypto.generate_or_read_cert()
     self.cert = (certpath, keypath)
 
-    self.process_repeats = phi_repeats
+    self.phi_repeats = phi_repeats
 
   def attest_data(self, report_data: bytes) -> bytes:
     print(f"Getting attestation from: {self.uds_sock}")
@@ -69,9 +69,9 @@ class ProcessorDaemon:
     except:
       raise ValueError(f"Body.caseId is not an integer: {body['caseId']}")
 
-    return {"incident": body['incident'], "policy": body['policy'], "caseId": body["caseId"]}
+    return {"incident": body['incident'], "policy": body['policy'], "caseId": int(body["caseId"])}
 
-  def do_process(self, incident: str, policy: str, caseId: int):
+  def process_incident(self, incident: str, policy: str, caseId: int):
     decision = self.phi.process_incident(incident, policy, repeats=self.phi_repeats)
     # Register decision with ACL app, repeat until successful
     request_url = self.acl_url + f"/app/incident/{caseId}/decision"
@@ -81,7 +81,7 @@ class ProcessorDaemon:
         'decision': str(decision)
       }
     print(f"Registering decision with ACL at: {request_url}")
-    response = requests.put(request_url, json= request_body)
+    response = requests.put(request_url, json= request_body, verify=False)
     print(response)
     if response.status_code != 200:
       print(f"Failed to register decision for {caseId}")
@@ -95,7 +95,9 @@ class ProcessorDaemon:
         print("Exception while getting job.")
         print(e)
         time.sleep(1)
-      self.process_incident(job)
+        continue
+      print(f"Processing {job}")
+      self.process_incident(job['incident'], job['policy'], job['caseId'])
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
