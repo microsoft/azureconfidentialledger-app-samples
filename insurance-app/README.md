@@ -52,19 +52,11 @@ sequenceDiagram
   A ->> C: Decision for caseId
 ```
 
-### Processor registration
-- Processor: Submits attestation for signing key
-  - ACL: if valid processor attestation (valid measurement, uvm and policy) store signing key and attestation
-
-### Incident claim
-
-- Client: submits incident fingerprint to ACL, receives back case number, and current policy
-  - ACL maps case number to metadata (policy and incident fingerprint)
-- Client: submits incident, case number and policy to a processor container
-- Processor: reaches decision, submits to ACL case number, incident fingerprint, policy and decision
-  - ACL stores case decision if the processing service and policy is valid, and there has not been a previously submitted decision.
-- Client polls for result of decision.
-
 ## Build and run this sample
 
 In `acl-app` execute `npm run build` then upload bundle to ACL via a http `PUT` request to `<acl-url>/app/userDefinedEndpoints?<api-version>`.
+
+## GDPR considerations
+If the incident description is considered PII, then it _cannot_ be stored in the ledger, as it cannot be removed at a later date.
+Instead we suggest that users store a fingerprint (SHA-256 hash) of the incident description in the ledger and store the actual description of the incident in a separate database, that the processor then fetches the description from.
+This should allow for compliance with the relevant regulations.
