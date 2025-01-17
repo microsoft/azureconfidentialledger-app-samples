@@ -51,7 +51,6 @@ export function isValidProcessor(processor_cert_fingerprint: string): boolean {
 }
 
 function validateProcessorMetadata(properties: ProcessorMetadata) {
-  return;
   let valid_properties = validProcessorPolicy.get(SINGLETON_KEY);
   if (
     properties.uvm_endorsements.did !== valid_properties.uvm_endorsements.did
@@ -64,7 +63,7 @@ function validateProcessorMetadata(properties: ProcessorMetadata) {
     throw new Error("FEED did not match");
   }
   if (
-    properties.uvm_endorsements.svn >= valid_properties.uvm_endorsements.svn
+    properties.uvm_endorsements.svn < valid_properties.uvm_endorsements.svn
   ) {
     throw new Error("SVN is too old");
   }
@@ -242,7 +241,11 @@ export function registerProcessor(
   try {
     validateProcessorMetadata(metadata);
   } catch (error) {
-    return { statusCode: 400, body:  error.message};
+    return { statusCode: 400, body:  JSON.stringify({
+      errormessage: error.message,
+      attested_metadata: metadata,
+    })
+    };
   }
 
   const processorCertFingerprint =
