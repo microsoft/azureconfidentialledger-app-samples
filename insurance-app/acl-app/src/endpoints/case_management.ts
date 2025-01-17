@@ -69,9 +69,14 @@ export function registerCase(
   };
 }
 
+interface RespNextCase {
+  metadata : CaseMetadata,
+  caseId : number
+}
+
 export function nextCase(
   request: ccfapp.Request
-): ccfapp.Response<CaseMetadata | string> {
+): ccfapp.Response<RespNextCase | string> {
 
   let caseQueue = getCaseQueue();
 
@@ -97,7 +102,7 @@ export function nextCase(
 
   return {
     statusCode: 200,
-    body: kvCases.get(case_id),
+    body: {caseId: case_id, metadata: kvCases.get(case_id)},
   };
 }
 
@@ -204,6 +209,9 @@ export function putCaseDecision(
   }
 
   kvCases.set(caseId, { ...caseMetadata, decision });
+  let queue = getCaseQueue();
+  let filtered_queue = queue.filter((val,idx,arr) => val != caseId)
+  kvCaseQueue.set(SINGLETON_KEY, filtered_queue)
 
   return { statusCode: 200 };
 }

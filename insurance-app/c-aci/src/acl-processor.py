@@ -18,7 +18,7 @@ class ProcessorDaemon:
   def __init__(self, uds_sock, acl_url, phi_repeats, model_path=None):
     self.phi = Phi(model_path=model_path) if model_path else Phi()
     self.uds_sock = f"unix://{uds_sock}"
-    self.acl_url = "http://" + acl_url
+    self.acl_url = "https://" + acl_url
 
     keypath, certpath = crypto.generate_or_read_cert()
     self.cert = (certpath, keypath)
@@ -32,9 +32,11 @@ class ProcessorDaemon:
     return report
 
   def register_with_acl(self):
+    print("Getting ccf cert fingerprint")
     res = requests.get(self.acl_url + "/app/ccf-cert", cert=self.cert, verify=False)
     assert(res.status_code == 200)
     client_fingerprint = res.text
+    print(client_fingerprint)
     attest_report = self.attest_data(hashlib.sha256(client_fingerprint.encode('utf-8')).digest())
 
     payload = {
@@ -42,37 +44,40 @@ class ProcessorDaemon:
       'platform_certificates': base64.b64encode(attest_report.platform_certificates).decode('ascii'),
       'uvm_endorsements': base64.b64encode(attest_report.uvm_endorsements).decode('ascii')
     }
-    register_url = self.acl_url + "/app/register/processor"
+    register_url = self.acl_url + "/app/processor"
     print(f"Registering with ACL at: {register_url}")
     response = requests.put(register_url, cert=self.cert, json=payload, verify=False)
-    print(response)
+    print(response, response.text)
     return response.status_code == 200
 
   def get_acl_incident_and_policy(self):
-    res = requests.get(self.acl_url + "/app/next-incident", cert=self.cert, verify=False)
+    res = requests.get(self.acl_url + "/app/cases/next", cert=self.cert, verify=False)
     if res.status_code == 404:
       return None
     if res.status_code not in {200}:
       raise ValueError("Error while getting next incident" + res.text())
     
     body = res.json()
-    if "incident" not in body:
-      raise ValueError(f"Body does not contain incident: {body}")
-    if "policy" not in body:
-      raise ValueError(f"Body does not contain policy: {body}")
     if "caseId" not in body:
       raise ValueError(f"Body does not contain caseId: {body}")
     try:
       int(body['caseId'])
     except:
       raise ValueError(f"Body.caseId is not an integer: {body['caseId']}")
+    if "metadata" not in body:
+      raise ValueError(f"Body does not contain any metadata: {body}")
+    metadata = body['metadata']
+    if "incident" not in metadata:
+      raise ValueError(f"Metadata does not contain incident: {metadata}")
+    if "policy" not in metadata:
+      raise ValueError(f"Metadata does not contain policy: {metadata}")
 
-    return {"incident": body['incident'], "policy": body['policy'], "caseId": int(body["caseId"])}
+    return {"incident": metadata['incident'], "policy": metadata['policy'], "caseId": int(body["caseId"])}
 
   def process_incident(self, incident: str, policy: str, caseId: int):
     decision = self.phi.process_incident(incident, policy, repeats=self.phi_repeats)
     # Register decision with ACL app, repeat until successful
-    request_url = self.acl_url + f"/app/incident/{caseId}/decision"
+    request_url = self.acl_url + f"/app/cases/indexed/{caseId}/decision"
     request_body = {
         'incident': incident,
         'policy': policy,
@@ -80,7 +85,7 @@ class ProcessorDaemon:
       }
     print(f"Registering decision with ACL at: {request_url}")
     response = requests.put(request_url, json= request_body, verify=False)
-    print(response)
+    print(response, response.text)
     if response.status_code != 200:
       print(f"Failed to register decision for {caseId}")
 

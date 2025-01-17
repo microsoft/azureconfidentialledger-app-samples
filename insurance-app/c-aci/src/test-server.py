@@ -2,14 +2,16 @@ from flask import Flask, jsonify, request
 from itertools import cycle
 import argparse
 
+from crypto import generate_or_read_cert
+
 app = Flask(__name__)
 
-@app.route('/app/user_cert', methods=['GET'])
+@app.route('/app/ccf-cert', methods=['GET'])
 def get_user_cert():
   print("Requested user cert")
   return "deadbeef", 200
 
-@app.route('/app/processor/register', methods=['PUT'])
+@app.route('/app/processor', methods=['PUT'])
 def register_processor():
   print("Registered processor")
   print(request.get_json())
@@ -25,7 +27,7 @@ incidents = cycle([
    None
 ])
 
-@app.route('/app/processor/incident/next', methods=['GET'])
+@app.route('/app/cases/next', methods=['GET'])
 def get_next_incident():
   response = next(incidents)
   if response is not None:
@@ -35,7 +37,7 @@ def get_next_incident():
     print("Getting next incident as asdf")
     return "asdf", 200
 
-@app.route('/app/incident/<caseId>/decision', methods=['PUT'])
+@app.route('/app/cases/indexed/<caseId>/decision', methods=['PUT'])
 def put_incident_decision(caseId):
   print(f"Setting decision for {caseId}")
   print(request.get_json())
@@ -46,4 +48,6 @@ if __name__ == '__main__':
   parser.add_argument("--port", type=int, default=8000)
   args = parser.parse_args()
 
-  app.run(debug=True, port=args.port) 
+  keypath, certpath = generate_or_read_cert()
+
+  app.run(debug=True, port=args.port, ssl_context=(certpath, keypath))
