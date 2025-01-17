@@ -1,11 +1,28 @@
 # C-ACI external attested processor for Insurance app
 
-This container is a barebones proof of concept for the processing container.
-It starts up a python server, and upon receiving a processing request should use the Phi LLM to process the request and policy, deciding how much to pay out, and then register that decision with ACL.
+```mermaid
+sequenceDiagram
+  participant Admin
+  participant A as ACL
 
-The `arm-template.json` has parameters for both the 
+  box Gray C-ACI host
+    participant P as Processor
+    participant S as Attestation Sidecar
+  end
 
-TODO:
- - Remove ssh access and start server on startup
- - Add support for processing using Phi 3
- - Use a restrictive policy to provide security guarantees
+  Admin ->> A: Set valid processor specification
+
+  note over P: Generate key
+  P -->> S: Attest(key)
+  S -->> P: Attestation
+  P ->> A: Register(attestation)
+
+  loop 
+  loop Check for available job
+  P <<->> A: 
+  end
+  A ->>+ P: Job(incident, policy)
+  note over P: Use Phi 3 to<br>process job
+  P ->>-A: Decision
+  end
+```

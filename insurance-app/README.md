@@ -9,35 +9,47 @@ Since these containers are attested, their processing of decisions can be truste
 
 ```mermaid
 sequenceDiagram
-    participant Admin
-    participant A as ACL
+  participant Admin
+  participant C as Client
+  participant A as ACL
 
-    box Gray C-ACI container    
+  box Gray C-ACI host
     participant P as Processor
     participant S as Attestation Sidecar
-    end
+  end
 
-    participant C as Client
+  note over Admin,S: Processor registration 
 
-    Admin ->> A: Set valid processors
+  Admin ->> A: Set valid processor specification
 
-    note over P: Generate key
-    P ->> S: Attest(key)
-    S ->> P: Attestion report
-    P ->> A: Register(attestation)
-    note over A: Verify Attestation<br>using policy
-    
-    Admin ->> A: Register user and policy
-    C ->> A: Report Incident
+  note over P: Generate key
+  P -->> S: Attest(key)
+  S -->> P: Attestation
+  P ->> A: Register(attestation)
 
-    P <<-->> A: Poll for incident
-    A ->>+ P: Incident and policy
-    note over P: Evaluate claim<br>using Phi 3
-    P ->>- A: Decision
+  note over Admin, S: Client registration
 
-    C <<-->> A: Poll for decision
-    A ->> C: Decision
+  Admin ->> A: Register(client, policy)
 
+  note over Admin, S: Incident processing
+
+  C ->> A: RegisterClaim(incident)
+  A ->> C: caseId
+
+
+
+
+  loop Poll for available job
+  P <<->> A: 
+  end
+  A ->>+ P: Job(caseId, incident, policy)
+  note over P: Use Phi 3 to<br>process job
+  P ->>-A: Decision for caseId
+  
+  loop Poll for Decision
+  C <<->> A: 
+  end
+  A ->> C: Decision for caseId
 ```
 
 ### Processor registration
