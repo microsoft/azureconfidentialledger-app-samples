@@ -31,16 +31,14 @@ sequenceDiagram
 
   Admin ->> A: Register(client, policy)
 
-  note over Admin, S: Incident processing
+  note over Admin, S: Case processing
 
   C ->> A: RegisterClaim(incident)
   A ->> C: caseId
 
-
-
-
   loop Poll for available job
-  P <<->> A: 
+  P ->> A: /app/incident/next
+  A ->> P: 404 no job
   end
   A ->>+ P: Job(caseId, incident, policy)
   note over P: Use Phi 3 to<br>process job

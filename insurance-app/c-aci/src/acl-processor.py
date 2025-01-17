@@ -5,10 +5,6 @@ import base64
 
 import hashlib
 
-from http.server import SimpleHTTPRequestHandler, HTTPServer
-import ssl
-import cgi
-import json
 import requests
 
 import argparse
@@ -36,7 +32,7 @@ class ProcessorDaemon:
     return report
 
   def register_with_acl(self):
-    res = requests.get(self.acl_url + "/app/user_cert", cert=self.cert, verify=False)
+    res = requests.get(self.acl_url + "/app/ccf-cert", cert=self.cert, verify=False)
     assert(res.status_code == 200)
     client_fingerprint = res.text
     attest_report = self.attest_data(hashlib.sha256(client_fingerprint.encode('utf-8')).digest())
@@ -46,16 +42,18 @@ class ProcessorDaemon:
       'platform_certificates': base64.b64encode(attest_report.platform_certificates).decode('ascii'),
       'uvm_endorsements': base64.b64encode(attest_report.uvm_endorsements).decode('ascii')
     }
-    register_url = self.acl_url + "/app/processor/register"
+    register_url = self.acl_url + "/app/register/processor"
     print(f"Registering with ACL at: {register_url}")
     response = requests.put(register_url, cert=self.cert, json=payload, verify=False)
     print(response)
     return response.status_code == 200
 
   def get_acl_incident_and_policy(self):
-    res = requests.get(self.acl_url + "/app/processor/incident/next", cert=self.cert, verify=False)
+    res = requests.get(self.acl_url + "/app/next-incident", cert=self.cert, verify=False)
+    if res.status_code == 404:
+      return None
     if res.status_code not in {200}:
-      raise ValueError("No next incident")
+      raise ValueError("Error while getting next incident" + res.text())
     
     body = res.json()
     if "incident" not in body:
@@ -94,7 +92,9 @@ class ProcessorDaemon:
       except Exception as e:
         print("Exception while getting job.")
         print(e)
-        time.sleep(1)
+        job = None
+      if job is None:
+        time.sleep(10)
         continue
       print(f"Processing {job}")
       self.process_incident(job['incident'], job['policy'], job['caseId'])
