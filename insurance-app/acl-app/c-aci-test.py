@@ -120,10 +120,7 @@ if __name__ == "__main__":
         "/app/processor/policy",
         body=
         {
-          "uvm_endorsements":
-            {"did":"did:x509:0:sha256:I__iuL25oXEVFdTP_aBLx_eT1RPHbCQ_ECBQfYZpt9s::eku:1.3.6.1.4.1.311.76.59.1.2","feed":"ContainerPlat-AMD-UVM","svn":"101"},
-          "measurement":["X+7jDW1+Gin0A9cKQZgjfd+xMFGi1pdkOUh8YJOI7X+YGJiHkgqy+gCWkDoMI/yh"],
-          "policy":["T0RIxn88jfyN6KXjcSXYB9rcxB8GzyP2FdvVLux3fRA="]}
+          "uvm_endorsements":{"did":"did:x509:0:sha256:I__iuL25oXEVFdTP_aBLx_eT1RPHbCQ_ECBQfYZpt9s::eku:1.3.6.1.4.1.311.76.59.1.2","feed":"ContainerPlat-AMD-UVM","svn":"101"},"measurement":["GCWkvyqcODVmpxdjJoOawONqHFs36eb6vI/dcTDVjO9W9DR1ArlHiVMM7BmKpRVD"],"policy":["T0RIxn88jfyN6KXjcSXYB9rcxB8GzyP2FdvVLux3fRA="]}
         ,
         headers={"content-type": "application/json"}
       )

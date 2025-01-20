@@ -100,3 +100,4 @@ Production use should remove this and in the `arm-template.json` directly run th
 - Connect and rerun the processor
   - `ssh -R 8000:localhost:8000 root@<container-ip> -- python3 /src/acl-processor.py --acl-url localhost:8000 --uds-sock /mnt/uds/sock --prime-phi`
 - Enter a test policy and incident
+  - TODO fix infinite loop bug, so try to enter a policy such as "This policy covers all car accidents" and incidents like "The policyholder hit a car"

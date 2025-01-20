@@ -45,7 +45,8 @@ class Phi:
   
     for _ in range(repeats) if not repeats else itertools.cycle([1]):
       result = self.llm.create_completion(prompt, max_tokens=100, stop=['<|end|>', '</result>'])
-      print(result)
+      print(result, flush=True)
+      
       try:
         result = result['choices'][0]['text']
         result = json.loads(result.split('<result>')[1])

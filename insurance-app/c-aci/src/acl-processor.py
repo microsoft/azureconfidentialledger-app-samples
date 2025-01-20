@@ -37,7 +37,7 @@ class ProcessorDaemon:
     self.cert = (certpath, keypath)
 
   def attest_data(self, report_data: bytes) -> bytes:
-    print(f"Getting attestation from: {self.uds_sock}")
+    print(f"Getting attestation from: {self.uds_sock}", flush=True)
     stub=as_grpc.AttestationContainerStub(grpc.insecure_channel(self.uds_sock))
     report = stub.FetchAttestation(as_pb.FetchAttestationRequest(report_data=report_data))
     return report
@@ -46,10 +46,10 @@ class ProcessorDaemon:
     # There is no safety issue in this sample for a MIM attack so we pin the certificate
     # This can also be baked into the container image, or released via a SKR service.
     # TODO make all other calls also use this CA (currently broken due to auth checks)
-    print("Pinning acl service certificate")
+    print("Pinning acl service certificate", flush=True)
     res = requests.get("https://" + self.raw_acl_url + "/node/network", verify=False)
     if(res.status_code != 200):
-      print(res, res.text)
+      print(res, res.text, flush=True)
       raise ValueError("Unable to set up connection to ACL. Perhaps the app has not been loaded?")
     service_cert = res.json()['service_certificate']
     with tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as cafile:
@@ -57,10 +57,10 @@ class ProcessorDaemon:
       cafile.flush()
       self.acl_ca = cafile.name
 
-    print("Getting ccf_format certificate fingerprint")
+    print("Getting ccf_format certificate fingerprint", flush=True)
     res = requests.get(self.acl_url + "/app/ccf-cert", cert=self.cert, verify=False)
     if(res.status_code != 200):
-      print(res, res.text)
+      print(res, res.text, flush=True)
       raise ValueError("Unable to set up connection to ACL. Perhaps the app has not been loaded?")
 
     self.fingerprint = res.text
@@ -73,14 +73,14 @@ class ProcessorDaemon:
       'uvm_endorsements': base64.b64encode(attest_report.uvm_endorsements).decode('ascii')
     }
     register_url = self.acl_url + "/app/processor"
-    print(f"Registering with ACL at: {register_url}")
+    print(f"Registering with ACL at: {register_url}", flush=True)
     response = requests.put(register_url, cert=self.cert, json=payload, verify=False)
     if response.status_code != 200:
-      print("Failed to register with ACL. Exiting now")
-      print(response, response.text)
-      exit -1
+      print("Failed to register with ACL. Exiting now", flush=True)
+      print(response, response.text, flush=True)
+      exit(-1)
 
-    print("Successfully registered with ACL")
+    print("Successfully registered with ACL", flush=True)
 
   def get_acl_incident_and_policy(self):
     res = requests.get(self.acl_url + "/app/cases/next", cert=self.cert, verify=False)
@@ -115,24 +115,24 @@ class ProcessorDaemon:
         'policy': policy,
         'decision': str(decision)
       }
-    print(f"Registering decision with ACL at: {request_url}")
+    print(f"Registering decision with ACL at: {request_url}", flush=True)
     response = requests.post(request_url, cert=self.cert, json= request_body, verify=False)
-    print(response, response.text)
+    print(response, response.text, flush=True)
     if response.status_code != 200:
-      print(f"Failed to register decision for {caseId}")
+      print(f"Failed to register decision for {caseId}", flush=True)
 
   def start_processing(self):
     while True:
       try:
         job = self.get_acl_incident_and_policy()
       except Exception as e:
-        print("Exception while getting job.")
-        print(e)
+        print("Exception while getting job.", flush=True)
+        print(e, flush=True)
         job = None
       if job is None:
         time.sleep(1)
         continue
-      print(f"Processing {job}")
+      print(f"Processing {job}", flush=True)
       self.process_incident(job['incident'], job['policy'], job['caseId'])
 
 if __name__ == "__main__":
