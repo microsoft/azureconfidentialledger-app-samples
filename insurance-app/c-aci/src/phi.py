@@ -40,7 +40,7 @@ class Phi:
         n_ctx=1024,
     )
   
-  def process_incident(self, incident, policy, repeats = None) -> str:
+  def process_incident(self, incident, policy, repeats = 1) -> str:
     prompt = preamble + f'\n<|user|>\n{{"incident": "{incident}", "policy": "{policy}"}}<|end|>\n<|accessor|>'
   
     for _ in range(repeats) if not repeats else itertools.cycle([1]):

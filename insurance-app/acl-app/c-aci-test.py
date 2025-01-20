@@ -132,7 +132,7 @@ if __name__ == "__main__":
 
       while True:
         # ---- Client registration ----
-        policy = input("Enter client policy then press Enter")
+        policy = input("Enter client policy: ")
         admin_client.put(
           "/app/user",
           body={
@@ -144,7 +144,7 @@ if __name__ == "__main__":
 
         # ---- Case processing ----
 
-        incident = input("Enter incident then press Enter")
+        incident = input("Enter incident: ")
 
         # Client registers case
         resp = client.post(
