@@ -14,16 +14,39 @@ import time
 
 from phi import Phi
 
+import tempfile
+
 class ProcessorDaemon:
   def __init__(self, uds_sock, acl_url, phi_repeats, model_path=None):
     self.phi = Phi(model_path=model_path) if model_path else Phi()
     self.uds_sock = f"unix://{uds_sock}"
     self.acl_url = "https://" + acl_url
+    self.phi_repeats = phi_repeats
 
     keypath, certpath = crypto.generate_or_read_cert()
     self.cert = (certpath, keypath)
 
-    self.phi_repeats = phi_repeats
+    # There is no safety issue in this sample for a MIM attack so we pin the certificate
+    # This can also be baked into the container image, or released via a SKR service.
+    # TODO make all other calls also use this CA (currently broken due to auth checks)
+    print("Pinning acl service certificate")
+    res = requests.get("https://" + acl_url + "/node/network", verify=False)
+    if(res.status_code != 200):
+      print("Unable to set up connection to ACL. Perhaps the app has not been loaded?")
+      exit -1
+    service_cert = res.json()['service_certificate']
+    with tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False) as cafile:
+      cafile.write(service_cert)
+      cafile.flush()
+      self.acl_ca = cafile.name
+
+    print("Getting ccf_format certificate fingerprint")
+    res = requests.get(self.acl_url + "/app/ccf-cert", cert=self.cert, verify=False)
+    if(res.status_code != 200):
+      print("Unable to set up connection to ACL. Perhaps the app has not been loaded?")
+      exit -1
+    assert(res.status_code == 200)
+    self.fingerprint = res.text
 
   def attest_data(self, report_data: bytes) -> bytes:
     print(f"Getting attestation from: {self.uds_sock}")
@@ -32,12 +55,7 @@ class ProcessorDaemon:
     return report
 
   def register_with_acl(self):
-    print("Getting ccf cert fingerprint")
-    res = requests.get(self.acl_url + "/app/ccf-cert", cert=self.cert, verify=False)
-    assert(res.status_code == 200)
-    client_fingerprint = res.text
-    print(client_fingerprint)
-    attest_report = self.attest_data(hashlib.sha256(client_fingerprint.encode('utf-8')).digest())
+    attest_report = self.attest_data(hashlib.sha256(self.fingerprint.encode('utf-8')).digest())
 
     payload = {
       'attestation': base64.b64encode(attest_report.attestation).decode('ascii'),
@@ -84,7 +102,7 @@ class ProcessorDaemon:
         'decision': str(decision)
       }
     print(f"Registering decision with ACL at: {request_url}")
-    response = requests.put(request_url, json= request_body, verify=False)
+    response = requests.post(request_url, cert=self.cert, json= request_body, verify=False)
     print(response, response.text)
     if response.status_code != 200:
       print(f"Failed to register decision for {caseId}")
@@ -106,8 +124,8 @@ class ProcessorDaemon:
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
-  parser.add_argument("--uds-sock", type=str, required=True, help="Path to unix domain socket for attestation side-car")
   parser.add_argument("--acl-url", type=str, required=True, help="URL for accessing Azure Confidential Ledger. ")
+  parser.add_argument("--uds-sock", type=str, default="/mnt/uds/sock", help="Path to unix domain socket for attestation side-car")
   parser.add_argument("--repeats", type=int, default=10, help="How many times Phi should try to process an incident.")
   args = parser.parse_args()
 

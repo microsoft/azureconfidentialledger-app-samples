@@ -119,19 +119,10 @@ if __name__ == "__main__":
       admin_client.put(
         "/app/processor/policy",
         body=
-        #{"uvm_endorsements":{
-        #  "did":"did:x509:0:sha256:I__iuL25oXEVFdTP_aBLx_eT1RPHbCQ_ECBQfYZpt9s::eku:1.3.6.1.4.1.311.76.59.1.2",
-        #  "feed":"ContainerPlat-AMD-UVM",
-        #  "svn":"101"
-        #  },
-        #  "measurement":["GCWkvyqcODVmpxdjJoOawONqHFs36eb6vI/dcTDVjO9W9DR1ArlHiVMM7BmKpRVD"],
-        #  "policy":["T0RIxn88jfyN6KXjcSXYB9rcxB8GzyP2FdvVLux3fRA="]}
-        {"uvm_endorsements":{
-          "did":"did:x509:0:sha256:iuL25oXEVFdTP_aBLx_eT1RPHbCQ_ECBQfYt9s::eku:1.3.6.1.4.1.311.76.59.1.2",
-          "feed":"ContainerPlat-AMD-UVM",
-          "svn":"101"
-          },
-          "measurement":["GCWkvyqcODVmpxdjJoOawONqHFs36eb6vI/dcTDVjO9W9DR1ArlHiVMM7BmKpRVD"],
+        {
+          "uvm_endorsements":
+            {"did":"did:x509:0:sha256:I__iuL25oXEVFdTP_aBLx_eT1RPHbCQ_ECBQfYZpt9s::eku:1.3.6.1.4.1.311.76.59.1.2","feed":"ContainerPlat-AMD-UVM","svn":"101"},
+          "measurement":["X+7jDW1+Gin0A9cKQZgjfd+xMFGi1pdkOUh8YJOI7X+YGJiHkgqy+gCWkDoMI/yh"],
           "policy":["T0RIxn88jfyN6KXjcSXYB9rcxB8GzyP2FdvVLux3fRA="]}
         ,
         headers={"content-type": "application/json"}
@@ -139,35 +130,39 @@ if __name__ == "__main__":
       resp = admin_client.get("/app/processor/policy")
       print(resp.body)
 
-      # ---- Client registration ----
-      admin_client.put(
-        "/app/user",
-        body={
-          "cert": client_fingerprint,
-          "policy": USER_POLICY,
-        },
-        headers={"content-type": "application/json"}
-      )
-
-      # ---- Case processing ----
-
-      # Client registers case
-      resp = client.post(
-        "/app/cases",
-        body=USER_INCIDENT
-      )
-      print(resp)
-      assert(resp.status_code == 200)
-      caseId = int(resp.body.text())
-
       while True:
-        resp = client.get(
-          f"/app/cases/indexed/{caseId}",
+        # ---- Client registration ----
+        policy = input("Enter client policy then press Enter")
+        admin_client.put(
+          "/app/user",
+          body={
+            "cert": client_fingerprint,
+            "policy": policy,
+          },
+          headers={"content-type": "application/json"}
         )
 
-        decision = resp.body.json()['decision']
-        if decision != "":
-          print(f"======= DECISION : {decision} =======")
-          break
+        # ---- Case processing ----
 
-        time.sleep(1)
+        incident = input("Enter incident then press Enter")
+
+        # Client registers case
+        resp = client.post(
+          "/app/cases",
+          body=incident
+        )
+        print(resp)
+        assert(resp.status_code == 200)
+        caseId = int(resp.body.text())
+
+        while True:
+          resp = client.get(
+            f"/app/cases/indexed/{caseId}",
+          )
+
+          decision = resp.body.json()['metadata']['decision']
+          if decision != "":
+            print(f"======= DECISION : {decision} =======")
+            break
+
+          time.sleep(1)
