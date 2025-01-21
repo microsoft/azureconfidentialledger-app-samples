@@ -23,7 +23,7 @@ interface ValidProcessorPolicy {
   policy: string[];
 }
 
-interface ProcessorMetadata {
+export interface ProcessorMetadata {
   uvm_endorsements: UvmEndorsements;
   measurement: string;
   policy: string;
@@ -48,6 +48,10 @@ export function isValidProcessor(processor_cert_fingerprint: string): boolean {
     return false;
   }
   return true;
+}
+
+export function getProcessorMetadata(processor_cert_fingerprint: string): ProcessorMetadata {
+  return processors.get(processor_cert_fingerprint);
 }
 
 function validateProcessorMetadata(properties: ProcessorMetadata) {

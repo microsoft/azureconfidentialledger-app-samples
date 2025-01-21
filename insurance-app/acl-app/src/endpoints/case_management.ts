@@ -1,6 +1,6 @@
 import * as ccfapp from "@microsoft/ccf-app";
 import { MAP_PREFIX, SINGLETON_KEY } from "./common";
-import { isValidProcessor } from "./processor_registration";
+import { isValidProcessor, ProcessorMetadata } from "./processor_registration";
 import { getPolicy } from "./user_registration";
 
 const kvCaseId = ccfapp.typedKv(
@@ -9,10 +9,15 @@ const kvCaseId = ccfapp.typedKv(
   ccfapp.int32
 );
 
+interface Decision {
+  processor_fingerprint: string;
+  decision: string;
+}
+
 interface CaseMetadata {
   incident: string;
   policy: string;
-  decision: string;
+  decision: Decision;
 }
 
 const kvCases = ccfapp.typedKv(
@@ -27,7 +32,7 @@ const kvCaseQueue = ccfapp.typedKv(
   ccfapp.json<number[]>()
 );
 
-function getCaseQueue() : number[] {
+function getCaseQueue(): number[] {
   if (!kvCaseQueue.has(SINGLETON_KEY)) {
     kvCaseQueue.set(SINGLETON_KEY, []);
   }
@@ -56,7 +61,10 @@ export function registerCase(
   kvCases.set(case_id, {
     incident,
     policy,
-    decision: "",
+    decision: {
+      decision: "",
+      processor_fingerprint: "",
+    },
   });
 
   let caseQueue = getCaseQueue();
@@ -70,14 +78,13 @@ export function registerCase(
 }
 
 interface RespNextCase {
-  metadata : CaseMetadata,
-  caseId : number
+  metadata: CaseMetadata;
+  caseId: number;
 }
 
 export function nextCase(
   request: ccfapp.Request
 ): ccfapp.Response<RespNextCase | string> {
-
   let caseQueue = getCaseQueue();
 
   if (caseQueue.length <= 0) {
@@ -102,7 +109,7 @@ export function nextCase(
 
   return {
     statusCode: 200,
-    body: {caseId: case_id, metadata: kvCases.get(case_id)},
+    body: { caseId: case_id, metadata: kvCases.get(case_id) },
   };
 }
 
@@ -192,14 +199,14 @@ export function putCaseDecision(
   if (!caseMetadata) {
     return { statusCode: 404, body: "Case not found" };
   }
-  if (caseMetadata.decision !== "") {
+  if (caseMetadata.decision.decision !== "") {
     return { statusCode: 400, body: "Already stored decision for case." };
   }
 
   if (caseMetadata.incident !== incident || caseMetadata.policy !== policy) {
     return {
       statusCode: 400,
-      body: "Case metadata does not match processed metadata",
+      body: "Expected case metadata does not match processed metadata",
     };
   }
 
@@ -208,10 +215,13 @@ export function putCaseDecision(
     return { statusCode: 403, body: "Invalid processor" };
   }
 
-  kvCases.set(caseId, { ...caseMetadata, decision });
+  kvCases.set(caseId, {
+    ...caseMetadata,
+    decision: { decision, processor_fingerprint: callerId },
+  });
   let queue = getCaseQueue();
-  let filtered_queue = queue.filter((val,idx,arr) => val != caseId)
-  kvCaseQueue.set(SINGLETON_KEY, filtered_queue)
+  let filtered_queue = queue.filter((val, idx, arr) => val != caseId);
+  kvCaseQueue.set(SINGLETON_KEY, filtered_queue);
 
   return { statusCode: 200 };
 }
