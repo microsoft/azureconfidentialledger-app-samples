@@ -26,3 +26,7 @@ sequenceDiagram
   P ->>-A: Decision
   end
 ```
+
+# Testing the processor locally
+
+`src/test-server.py` fakes out the endpoints for the ACL app for testing.

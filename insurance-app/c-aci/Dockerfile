@@ -19,8 +19,7 @@ ENV TZ=Europe
 RUN apt update && apt install -y openssh-server
 RUN apt update && apt install -y python3 python3-pip
 
-
-# This must be run in destination container otherwise it will not work on epyc processors
+# This must be run on the same CPU as the target deployment, so defer until startup.
 #ADD src/requirements.txt /src/requirements.txt
 #RUN pip install --break-system-packages -r /src/requirements.txt
 

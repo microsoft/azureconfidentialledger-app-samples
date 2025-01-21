@@ -43,7 +43,7 @@ class Phi:
   def process_incident(self, incident, policy, repeats = 1) -> str:
     prompt = preamble + f'\n<|user|>\n{{"incident": "{incident}", "policy": "{policy}"}}<|end|>\n<|accessor|>'
   
-    for _ in range(repeats) if not repeats else itertools.cycle([1]):
+    for _ in range(repeats) if repeats is not None else itertools.cycle([1]):
       result = self.llm.create_completion(prompt, max_tokens=100, stop=['<|end|>', '</result>'])
       print(result, flush=True)
       
