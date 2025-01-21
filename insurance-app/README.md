@@ -88,13 +88,11 @@ Production use should remove this and in the `arm-template.json` directly run th
 
 ### Testing the sample against a local TPAL 
 
-- Connect and run the processor using ssh
-  - `ssh -R 8000:localhost:8000 root@<container-ip> -- python3 /src/acl-processor.py --acl-url localhost:8000 --uds-sock /mnt/uds/sock --prime-phi`
-  - As the sample does not currently generate the corresponding policy this will initially fail with the returned policy.
-- Amend `./acl-app/c-aci-test.py` to replace the policy with the returned policy
-  - TODO do this properly before the test to remove the above step
-- In `acl-app` run `npm run build && python ./c-aci-test.py --bundle dist/bundle.json --tpal-tests-directory ~/tpal/tests/ --sandbox-common ~/tpal/build/workspace/sandbox_common/ --setup --add-roles`
+- Update the policy in `acl-app/c-aci-test.py` to match the container's policy
+  - `az confcom acipolicygen ...`
+- In `acl-app` run `npm run build && python ./c-aci-test.py --bundle dist/bundle.json --tpal-tests-directory <tpal>/tests/ --sandbox-common <tpal>/build/workspace/sandbox_common/ --setup --add-roles`
   - This sets up the relevant roles and stops with a prompt for a user's policy statement and then their incident that they wish to claim against.
+  - You may need to source a venv, the ccf venv works
 - Connect and rerun the processor
   - `ssh -R 8000:localhost:8000 root@<container-ip> -- python3 /src/acl-processor.py --acl-url localhost:8000 --uds-sock /mnt/uds/sock --prime-phi`
 - Enter a test policy and incident

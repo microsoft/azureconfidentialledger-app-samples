@@ -14,6 +14,7 @@ docker login \
   ${ACRPrefix}.azurecr.io
 docker push $ImageName
 
+set -x 
 # Deploy primary container and sidecar using ./arm-template.json
 az deployment group create \
   --resource-group $ResourceGroup --parameters name=${DeploymentName} \
