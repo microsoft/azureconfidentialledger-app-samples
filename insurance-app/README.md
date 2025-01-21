@@ -20,32 +20,30 @@ sequenceDiagram
 
   note over Admin,S: Processor registration 
 
-  Admin ->> A: Set valid processor specification
+  Admin ->> A: set valid processor specification
 
   note over P: Generate key
-  P -->> S: Attest(key)
-  S -->> P: Attestation
+  P ->> A: Get ccf formatting of key
+  P <<-->> S: Attest(key)
   P ->> A: Register(attestation)
 
-  note over Admin, S: Client registration
+  note over Admin, S: Client policy registration
 
   Admin ->> A: Register(client, policy)
 
   note over Admin, S: Case processing
 
-  C ->> A: RegisterClaim(incident)
-  A ->> C: caseId
+  C ->> A: RegisterClaim(incident)<br>returning caseId
 
   loop Poll for available job
-  P ->> A: /app/incident/next
-  A ->> P: 404 no job
+  P ->> A: Get next job if any
   end
   A ->>+ P: Job(caseId, incident, policy)
   note over P: Use Phi 3 to<br>process job
-  P ->>-A: Decision for caseId
+  P ->>-A: Store decision for caseId
   
   loop Poll for Decision
-  C <<->> A: 
+  C <<->> A: Check case
   end
   A ->> C: Decision for caseId
 ```

@@ -69,10 +69,10 @@ function validateProcessorMetadata(properties: ProcessorMetadata) {
   }
 
   if (!valid_properties.measurement.includes(properties.measurement)) {
-    throw new Error("Measurement is invalid");
+    throw new Error("Measurement is invalid.");
   }
   if (!valid_properties.policy.includes(properties.policy)) {
-    throw new Error("Policy is invalid");
+    throw new Error("UVM's policy is invalid.");
   }
 }
 
