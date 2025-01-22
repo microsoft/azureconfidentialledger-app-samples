@@ -29,4 +29,4 @@ sequenceDiagram
 
 # Testing the processor locally
 
-`src/test-server.py` fakes out the endpoints for the ACL app for testing.
+`src/test-server.py` runs a basic flask server which serves the endpoints of the ACL app for testing, without any logic behind it.
