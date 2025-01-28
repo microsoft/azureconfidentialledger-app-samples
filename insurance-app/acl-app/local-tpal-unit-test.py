@@ -130,7 +130,6 @@ if __name__ == "__main__":
         headers={"content-type": "application/json"}
       )
       resp = admin_client.get("/app/processor/policy")
-      print(resp.body)
 
       # Register processor
       resp = processor_client.put(
@@ -138,7 +137,6 @@ if __name__ == "__main__":
         body=processor_registration_request,
         headers={"content-type": "application/json"}
       )
-      print(resp.body)
 
       # ---- Client registration ----
       admin_client.put(
@@ -157,7 +155,6 @@ if __name__ == "__main__":
         "/app/cases",
         body=USER_INCIDENT
       )
-      print(resp)
       assert(resp.status_code == 200)
       caseId = int(resp.body.text())
 
@@ -165,19 +162,16 @@ if __name__ == "__main__":
       resp = processor_client.get(
         "/app/cases/next",
       )
-      print(resp)
 
       # No decision while processing
       resp = client.get(
         f"/app/cases/indexed/{caseId}",
       )
-      print(resp)
 
       # Requesting another case returns current one
       resp = processor_client.get(
         "/app/cases/next",
       )
-      print(resp)
 
       # Processor stores decision
       resp = processor_client.post(
@@ -189,10 +183,10 @@ if __name__ == "__main__":
         },
         headers={"content-type":"application/json"}
       )
-      print(resp)
 
       # Client can retrieve the case
       resp = client.get(
         f"/app/cases/indexed/{caseId}",
       )
-      print(resp)
+      print(resp.body.json())
+      assert(resp.body.json()['metadata']['decision']['decision'] == 'approve')

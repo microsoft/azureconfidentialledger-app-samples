@@ -64,13 +64,20 @@ This should allow for compliance with the relevant regulations.
     - `git clone https://github.com/microsoft/tpal`
     - build with `mkdir build && cd build && CC="clang-15" CXX="clang++-15" cmake -GNinja -DCOMPILE_TARGET=virtual .. && ninja`
     - from the build directory run with `PLATFORM=virtual ../tests/start_network.sh /path/to/ccf_virtual/`
-- In `./acl-app` execute `npm run build` and using the admin user certificates upload the bundle to ACL via http `PUT` request to `<acl-url>/app/userDefinedEndpoints?<api-version>`.
+- Build and upload the bundle
+  - In `<repository-root>/insurance-app/acl-app`
+	- Install dependencies: `npm install .`
+	- Build the bundle: `npm run build`
+	- You should now be able to upload the bundle to ACL
+	  - ` curl -X PUT -d "@dist/bundle.json" -H "Content-Type: application/json" -k --cert <path_to_admin_cert> --key <path_to_admin_privk> https://<acl-url>/app/userDefinedEndpoints?api-version=2024-08-22-preview`
+		- However the admin user may not be set up yet, if you are using a local TPAL instance.
+		- The `c-aci-test.py` script will set up the local TPAL instance and then try to submit a policy and incident.
+- Test it is working by running the unit test after building the bundle
+  - In `<repository-root>/insurance-app/acl-app`
+  - `npm run build && python ./local-tpal-unit-test.py --bundle dist/bundle.json --tpal-tests-directory <tpal>/tests/ --sandbox-common <tpal>/build/workspace/sandbox_common --setup --add-roles`
+  - You may need to source a venv, the ccf venv created by the sandbox works: `source <tpal>/build/.venv_ccf_sandbox/bin/activate`
+	- This unit test uses a statically configured policy and attested keys to do an end-to-end test.
 
-There is a unit test in `./acl-app/local-tpal-unit-test.py` which be run with 
-```
-npm run build && python ./local-tpal-unit-test.py --bundle dist/bundle.json --tpal-tests-directory <tpal>/tests/ --sandbox-common <tpal/build/workspace/sandbox_common
-```
-This uses a statically configured policy and attested keys to do an end-to-end test.
 
 ### C-ACI container
 
@@ -98,4 +105,3 @@ Production use should remove this and in the `arm-template.json` directly run th
 - Connect and rerun the processor
   - `ssh -R 8000:localhost:8000 root@<container-ip> -- python3 /src/acl-processor.py --acl-url localhost:8000 --uds-sock /mnt/uds/sock --prime-phi`
 - Enter a test policy and incident
-  - TODO fix infinite loop bug, so try to enter a policy such as "This policy covers all car accidents" and incidents like "The policyholder hit a car"
