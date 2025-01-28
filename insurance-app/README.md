@@ -70,7 +70,7 @@ There is a unit test in `./acl-app/local-tpal-unit-test.py` which be run with
 ```
 npm run build && python ./local-tpal-unit-test.py --bundle dist/bundle.json --tpal-tests-directory <tpal>/tests/ --sandbox-common <tpal/build/workspace/sandbox_common
 ```
-This uses a previously captured policy and attested keys to do an end-to-end test.
+This uses a statically configured policy and attested keys to do an end-to-end test.
 
 ### C-ACI container
 
