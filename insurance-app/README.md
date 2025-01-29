@@ -81,8 +81,10 @@ This should allow for compliance with the relevant regulations.
 
 ### C-ACI container
 
-- Ensure you have an azure container repository set up
+- In `<repository-root>/insurance-app/c-aci`
 - Ensure that you have logged into the azure cli via `az login`
+- Ensure you have an azure container repository set up
+  - https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-azure-cli
 - Ensure that you have a hugging face token to download the model
 - Build and push to the acr the attestation sidecar
   - `git clone https://github.com/microsoft/confidential-sidecar-containers.git`
@@ -93,7 +95,7 @@ This should allow for compliance with the relevant regulations.
 - Build and deploy using `HUGGINGFACE_TOKEN=<hugging_face_token> bash deploy-aci.sh`
 
 Note: This sample provides ssh access to the container for debugging and exploration.
-Production use should remove this and in the `arm-template.json` directly run the python processor
+Production use should remove this and in the `arm-template.json` directly run the python processor.
 
 ### Testing the sample against a local TPAL 
 
