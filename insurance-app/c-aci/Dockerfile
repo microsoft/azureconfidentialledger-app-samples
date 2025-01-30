@@ -16,7 +16,7 @@ FROM mcr.microsoft.com/mirror/docker/library/ubuntu:24.04
 
 ENV TZ=Europe
 
-RUN apt update && apt install -y openssh-server
+RUN apt update && apt install -y openssh-server git
 RUN apt update && apt install -y python3 python3-pip
 
 # This must be run on the same CPU as the target deployment, so defer until startup.
