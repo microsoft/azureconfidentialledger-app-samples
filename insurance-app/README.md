@@ -92,7 +92,11 @@ This should allow for compliance with the relevant regulations.
   - `docker build -t <acr-name>.azurecr.io/attestation-sidecar -f docker/attestation-container/Dockerfile .`
   - `docker login -u 00000000-0000-0000-0000-000000000000 -p $(az acr login --name <acr-name> --expose-token --output tsv --query accessToken) <acr-name>.azurecr.io`
   - `docker push <acr-name>.azurecr.io/attestation-sidecar`
-- Build and deploy using `HUGGINGFACE_TOKEN=<hugging_face_token> bash deploy-aci.sh`
+- Prepare image and arm-template
+  - `HUGGINGFACE_TOKEN=<hugging_face_token> bash pre-deploy-aci.sh`
+	- Copy the hash in the final line of output for the policy
+- Deploy to c-aci
+  - `bash deploy-aci.sh`
 
 Note: This sample provides ssh access to the container for debugging and exploration.
 Production use should remove this and in the `arm-template.json` directly run the python processor.
