@@ -15,12 +15,6 @@ parser.add_argument(
 parser.add_argument(
     "--sandbox-common", type=str, help="Path to sandbox_common for workspace."
 )
-parser.add_argument(
-    "--admin-cert", default=None, type=str, help="Path to the admin certificate."
-)
-parser.add_argument(
-    "--admin-privk", default=None, type=str, help="Path to the admin privk."
-)
 parser.description = "This script sets up a local TPAL instance similarly to one set up using the Azure portal."
 
 if __name__ == "__main__":

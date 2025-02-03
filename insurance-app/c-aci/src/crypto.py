@@ -80,13 +80,8 @@ def generate_or_read_cert(credential_root=None):
   if (keypath and not os.path.isfile(keypath)) or \
      (certpath and not os.path.isfile(certpath)):
     print("Creating new credentials")
-    # TODO ensure this is correct
     privk_pem_str, _ = generate_rsa_keypair(2048)
     cert_pem_str = generate_cert(privk_pem_str)
-
-    # TODO delete
-    print(privk_pem_str)
-    print(cert_pem_str)
 
     with open(keypath, "w") as keyfile, \
          open(certpath, "w") as certfile:

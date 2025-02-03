@@ -57,20 +57,17 @@ USER_INCIDENT = "The policyholder hit another car."
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--bundle", type=str, help="Bundle to deploy")
-parser.add_argument(
-    "--sandbox-common", type=str, help="Path to sandbox_common for workspace"
-)
 parser.add_argument("--admin-cert", type=str, help="Path to ACL admin certificate.")
 parser.add_argument("--admin-key", type=str, help="Path to ACL admin private key.")
 parser.add_argument(
     "--valid-processor-measurement",
     type=str,
-    help="base64 encoded processor measurement.",
+    help="Base64 encoded processor measurement.",
 )
 parser.add_argument(
-    "--valid-processor-policy", type=str, help="hex encoded processor policy."
+    "--valid-processor-policy", type=str, help="Base64 encoded processor policy."
 )
-parser.add_argument("--acl-url", type=str, default="https://localhost")
+parser.add_argument("--acl-url", type=str, default="https://localhost:8000")
 parser.add_argument("--api-version", type=str, default="2024-08-22-preview")
 
 if __name__ == "__main__":
