@@ -82,6 +82,7 @@ This should allow for compliance with the relevant regulations.
 - Ensure you have an azure container repository set up
   - https://learn.microsoft.com/en-us/azure/container-registry/container-registry-get-started-azure-cli
 - Ensure that you have a hugging face token to download the model
+  - Get one at https://huggingface.com
 - Build and push to the acr the attestation sidecar
   - `git clone https://github.com/microsoft/confidential-sidecar-containers.git`
   - `cd confidential-sidecar-containers`
@@ -90,7 +91,7 @@ This should allow for compliance with the relevant regulations.
   - `docker push <acr-name>.azurecr.io/attestation-sidecar`
 - Update `<repository-root>/insurance-app/c-aci/env.sh`
 - Prepare image and arm-template
-  - `HUGGINGFACE_TOKEN=<hugging_face_token> bash pre-deploy-aci.sh`
+  - `HUGGINGFACE_TOKEN=<hugging_face_token> bash prepare-deploy-aci.sh`
 	- Copy the hash in the final line of output for the policy
 - Deploy to c-aci
   - `bash deploy-aci.sh`
