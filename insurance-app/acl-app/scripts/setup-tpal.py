@@ -30,8 +30,8 @@ if __name__ == "__main__":
         "2024-08-22-preview",
         [tester.CCFEndpoint("127.0.0.1", 8000, "0")],
     )
-    if args.setup:
-        test_harness._setup_ledger()
+
+    test_harness._setup_ledger()
 
     admin_cert_identity = test_harness._get_cert_identity()
 
