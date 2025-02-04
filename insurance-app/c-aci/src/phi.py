@@ -2,7 +2,7 @@ from llama_cpp import Llama
 import json
 import itertools
 
-preamble = '''
+preamble = """
 <|system|>
 You are an insurance claim assessor, assessing independent and separate claims.
 Each claim will be provided by the user and include the incident and their current policy.
@@ -31,32 +31,37 @@ or
 {"incident": "The policyholder drove through a flooded street despite warnings and the car's engine suffered severe water damage. The incident occurred during heavy rainfall.", "policy": "This policy covers damages to the insured vehicle from natural disasters. Exclusions include intentional damage."}<|end|>
 <|assessor|>
 <result>{"result": "deny"}</result><|end|>
-'''
-  
+"""
+
+
 class Phi:
-  def __init__(self, model_path="./Phi-3-mini-4k-instruct-q4.gguf"):
-    self.llm = Llama(
-        model_path=model_path,
-        n_ctx=1024,
-    )
-  
-  def process_incident(self, incident, policy, repeats = 1) -> str:
-    prompt = preamble + f'\n<|user|>\n{{"incident": "{incident}", "policy": "{policy}"}}<|end|>\n<|accessor|>'
-  
-    for _ in range(repeats) if repeats is not None else itertools.cycle([1]):
-      result = self.llm.create_completion(prompt, max_tokens=100, stop=['<|end|>', '</result>'])
-      print(result, flush=True)
-      
-      try:
-        result = result['choices'][0]['text']
-        result = json.loads(result.split('<result>')[1])
-        if "result" not in result:
-          continue
-        if result["result"].lower() not in {"approve", "deny"}:
-          continue
-        return result["result"].lower()
-      except Exception as e:
-        print(e)
-        continue
-    return "error"
-        
+    def __init__(self, model_path="./Phi-3-mini-4k-instruct-q4.gguf"):
+        self.llm = Llama(
+            model_path=model_path,
+            n_ctx=1024,
+        )
+
+    def process_incident(self, incident, policy, repeats=1) -> str:
+        prompt = (
+            preamble
+            + f'\n<|user|>\n{{"incident": "{incident}", "policy": "{policy}"}}<|end|>\n<|accessor|>'
+        )
+
+        for _ in range(repeats) if repeats is not None else itertools.cycle([1]):
+            result = self.llm.create_completion(
+                prompt, max_tokens=100, stop=["<|end|>", "</result>"]
+            )
+            print(result, flush=True)
+
+            try:
+                result = result["choices"][0]["text"]
+                result = json.loads(result.split("<result>")[1])
+                if "result" not in result:
+                    continue
+                if result["result"].lower() not in {"approve", "deny"}:
+                    continue
+                return result["result"].lower()
+            except Exception as e:
+                print(e)
+                continue
+        return "error"

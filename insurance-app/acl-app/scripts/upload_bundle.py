@@ -1,4 +1,3 @@
-
 import argparse
 import json
 import sys
@@ -12,9 +11,7 @@ parser.add_argument(
 parser.add_argument(
     "--sandbox-common", type=str, help="Path to sandbox_common for workspace."
 )
-parser.add_argument(
-    "--bundle", type=str, help="Path to bundle."
-)
+parser.add_argument("--bundle", type=str, help="Path to bundle.")
 parser.description = "This script uploads the bundle using the TPAL test setup"
 
 if __name__ == "__main__":

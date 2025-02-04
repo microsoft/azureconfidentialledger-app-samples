@@ -98,7 +98,9 @@ if __name__ == "__main__":
         headers={"content-type": "application/json"},
     )
     print(res.status_code, res.text)
-    assert res.status_code == 200, f"Failed to set processor policy: {res.status_code} {res.text} | {res.request.body}"
+    assert (
+        res.status_code == 200
+    ), f"Failed to set processor policy: {res.status_code} {res.text} | {res.request.body}"
 
     # ---- Client registration ----
     policy = input("Enter client policy: ")
@@ -110,7 +112,9 @@ if __name__ == "__main__":
         },
         headers={"content-type": "application/json"},
     )
-    assert res.status_code == 200, f"Failed to set client policy: {res.status_code} {res.text}"
+    assert (
+        res.status_code == 200
+    ), f"Failed to set client policy: {res.status_code} {res.text}"
 
     # ---- Case processing ----
     while True:
