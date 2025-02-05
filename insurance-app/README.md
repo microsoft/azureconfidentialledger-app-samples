@@ -1,6 +1,6 @@
 # Insurance sample for ACL
 
-This sample demonstrates the capabilities of ACL to provide transparency and accountability for both the client and a insurance company.
+This sample demonstrates the capabilities of Programmable ACL to provide transparency and accountability for both the client and a insurance company.
 
 The aim is to offload heavy CPU processing tasks to attested containers.
 Since these containers are attested, their processing of decisions can be trusted, even though they are not executed via ACL.
@@ -51,29 +51,26 @@ sequenceDiagram
 [Detailed diagram](./acl-app/README.md)
 
 ## GDPR considerations
-If the incident description is considered PII, then it _cannot_ be stored in the ledger, as it cannot be removed at a later date.
-Instead we suggest that users store a fingerprint (SHA-256 hash) of the incident description in the ledger and store the actual description of the incident in a separate database, that the processor then fetches the description from.
+If the incident description is considered PII, then it _must not_ be stored in the ledger, as it cannot be removed at a later date.
+Instead we suggest that users store a digest (SHA-256 hash) of the incident description in the ledger and store the actual description of the incident in a separate database, that the processor then fetches the description from.
 This should allow for compliance with the relevant regulations.
 
 ## Build and run this sample
 
 ### ACL app
 
-- Ensure you have ACL running
-  - To run ACL locally in virtual mode:
-    - `git clone https://github.com/microsoft/tpal`
-    - build with `mkdir build && cd build && CC="clang-15" CXX="clang++-15" cmake -GNinja -DCOMPILE_TARGET=virtual .. && ninja`
-    - from the build directory run with `PLATFORM=virtual ../tests/start_network.sh /path/to/ccf_virtual/`
+- Ensure you have an instance of Programmable ACL
+  - https://learn.microsoft.com/en-us/azure/confidential-ledger/programmability?tabs=CLI
+  - Add an admin role with access to `/policy/write` and `/processor/write`
+  - Using a local ssl certificate and private key, hereafter the admin certificate and private key, register that certificate with the admin role.
 - Build the bundle
   - In `<repository-root>/insurance-app/acl-app`
 	- Install dependencies: `npm install .`
 	- Build the bundle: `npm run build`
-- If using a local TPAL installation, test it is working by running the unit test after building the bundle
-  - In `<repository-root>/insurance-app/acl-app`
-  - `npm run build && python scripts/local-tpal-unit-test.py --bundle dist/bundle.json --tpal-tests-directory <tpal>/tests/ --sandbox-common <tpal>/build/workspace/sandbox_common --setup --add-roles`
-  - This requires that the relevant packages from tpal's tests have been installed: `pip install -r <tpal>/tests/requirements.text`
-	- This unit test uses a statically configured policy and attested keys to do an end-to-end test.
-
+- Test the app is working 
+  - `python scripts/unit-test.py --bundle dist/bundle.json --admin-cert <admin-cert> --admin-key <admin-key> --acl-url <acl-url>`
+  - You may need to install the pip dependencies `pip install -r <repository-root>/insurance-app/acl-app/scripts/requirements.txt`
+  - This test replays a previously captured, policy, measurement and attestation for the processor
 
 ### C-ACI container
 
@@ -99,21 +96,15 @@ This should allow for compliance with the relevant regulations.
 Note: This sample provides ssh access to the container for debugging and exploration.
 Production use should remove this and in the `arm-template.json` directly run the python processor.
 
-### Testing the sample against a local TPAL 
+### Testing the sample
 
-- In `<repository-root>/insurance-app/acl-app`
-- If using a local TPAL set it up
-  - `python scripts/setup-tpal.py --tpal-tests-directory <tpal>/tests/ --sandbox-common <tpal>/build/workspace/sandbox_common/ --setup --add-roles`
-  - This sets up the relevant roles and stops with a prompt for a user's policy statement and then their incident that they wish to claim against.
-  - This requires that the relevant packages have been installed: `pip install -r <tpal>/tests/requirements.text`
-- And upload bundle
-  - `npm run build && python scripts/upload_bundle.py --tpal-tests-directory <tpal>/tests --sandbox-common <tpal>/build/workspace/sandbox_common/ --bundle dist/bundle.json`
 - In two terminal sessions, start the client and the server
   - C-ACI start processor
     - `ssh -R 8000:localhost:8000 root@<container-ip> -- python3 /src/acl-processor.py --acl-url localhost:8000 --uds-sock /mnt/uds/sock --prime-phi`
   - ACL-APP process claim
-    - Source a venv, and install `scripts/requirements.txt`
-    - `python scripts/c-aci-test.py --admin-cert <admin-cert> --admin-key <admin-key> --valid-processor-policy <processor-policy> --valid-processor-measurement <processor-measurement>`
-    - For a local tpal install, the admin identity is `user0` in the `sandbox_common`.
+    - In `<repository-root>/insurance-app/acl-app`
+    - Ensure the python dependencies are installed `pip install -r scripts/requirements.txt`
+      - You may have to source or set up a python venv
+    - `python scripts/c-aci-test.py --bundle dist/bundle.json --admin-cert <admin-cert> --admin-key <admin-key> --valid-processor-policy <policy> --valid-processor-measurement <measurement> --acl-url <acl-url>`
     - The policy is the last output line from the previous run of `az confcom acipolicygen`, but converted from hex to base64
     - The measurement comes from C-ACI
