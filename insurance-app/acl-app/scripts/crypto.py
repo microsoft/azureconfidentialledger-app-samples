@@ -127,3 +127,13 @@ def sign_payload(identity, msg_type: str, json_payload: dict) -> bytes:
         raise ValueError("Cert file is empty or improperly formatted.")
     phdr = {"acl.msg.type": msg_type, "acl.msg.created_at": int(time.time())}
     return ccf.cose.create_cose_sign1(serialised_payload, key, cert, phdr)
+
+
+def format_cert_fingerprint(hex_string):
+    # Convert to uppercase
+    hex_string = hex_string.upper()
+    # Split into pairs of two characters and join with a colon
+    formatted_fingerprint = ":".join(
+        hex_string[i : i + 2] for i in range(0, len(hex_string), 2)
+    )
+    return formatted_fingerprint

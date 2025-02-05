@@ -24,6 +24,9 @@ class HTTPXClient:
     def post(self, path, *args, **kwargs) -> httpx.Response:
         return self.session.request("POST", url=self.acl_url + path, *args, **kwargs)
 
+    def patch(self, path, *args, **kwargs) -> httpx.Response:
+        return self.session.request("PATCH", url=self.acl_url + path, *args, **kwargs)
+
 
 USER_POLICY = "This policy covers all claims."
 USER_INCIDENT = "The policyholder hit another car."
@@ -32,14 +35,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--admin-cert", type=str, help="Path to ACL admin certificate.")
 parser.add_argument("--admin-key", type=str, help="Path to ACL admin private key.")
 parser.add_argument("--bundle", type=str, help="Path to app bundle.json")
-parser.add_argument(
-    "--valid-processor-measurement",
-    type=str,
-    help="Base64 encoded processor measurement.",
-)
-parser.add_argument(
-    "--valid-processor-policy", type=str, help="Base64 encoded processor policy."
-)
 parser.add_argument("--acl-url", type=str, default="https://localhost:8000")
 parser.add_argument("--api-version", type=str, default="2024-08-22-preview")
 
@@ -49,10 +44,12 @@ if __name__ == "__main__":
     admin_identity = (args.admin_cert, args.admin_key)
     admin_client = HTTPXClient(args.acl_url, admin_identity)
 
+    print("Creating client")
     client_keypath, client_certpath = crypto.generate_or_read_cert()
     client_identity = client_certpath, client_keypath
     client_client = HTTPXClient(args.acl_url, client_identity)
 
+    print("Creating processor")
     processor_keypath, processor_certpath = crypto.generate_or_read_cert()
     processor_identity = processor_certpath, processor_keypath
     processor_client = HTTPXClient(args.acl_url, processor_identity)
@@ -64,38 +61,64 @@ if __name__ == "__main__":
     signed_bundle = crypto.sign_payload(
         (args.admin_cert, args.admin_key), "userDefinedEndpoints", bundle
     )
-    r = httpx.put(
+    resp = httpx.put(
         f"{args.acl_url}/app/userDefinedEndpoints?api-version={args.api_version}",
         data=signed_bundle,
         headers={"content-type": "application/cose"},
         verify=False,
     )
-    assert r.status_code in {200, 201}, (r.status_code, r.text)
+    assert resp.status_code in {200, 201}, (resp.status_code, resp.text)
     print("Uploaded app as cose signed bundle.")
 
-    resp = client_client.get("/app/ccf-cert")
+    # ---- Adding InsuranceAdmin role ----
+    print("Adding ACL roles")
+    resp = admin_client.put(
+        f"/app/roles?api-version={args.api_version}",
+        json={
+            "roles": [
+                {
+                    "role_name": "InsuranceAdmin",
+                    "role_actions": ["/policy/write", "/processor/write"],
+                }
+            ]
+        },
+    )
+    assert resp.status_code == 200 or (
+        resp.status_code == 400 and resp.json()["error"]["code"] == "RoleExists"
+    ), (resp.status_code, resp.text)
+
+    # ---- Registering admin as InsuranceAdmin ----
+    resp = admin_client.get("/app/ccf-cert")
     assert resp.status_code == 200
-    client_fingerprint = resp.text
+    admin_fingerprint = resp.text
+
+    resp = admin_client.patch(
+        f"/app/ledgerUsers/{admin_fingerprint}?api-version={args.api_version}",
+        json={"assignedRoles": ["InsuranceAdmin"]},
+        headers={"content-type": "application/merge-patch+json"},
+    )
+    assert resp.status_code == 200, (resp.status_code, resp.text)
 
     # ---- Register valid policy ----
     print("Setting processor policy")
-    admin_client.put(
-        "/app/processor/policy",
-        json={
-            "uvm_endorsements": {
-                "did": "did:x509:0:sha256:I__iuL25oXEVFdTP_aBLx_eT1RPHbCQ_ECBQfYZpt9s::eku:1.3.6.1.4.1.311.76.59.1.2",
-                "feed": "ContainerPlat-AMD-UVM",
-                "svn": "101",
-            },
-            "measurement": [
-                "GCWkvyqcODVmpxdjJoOawONqHFs36eb6vI/dcTDVjO9W9DR1ArlHiVMM7BmKpRVD"
-            ],
-            "policy": ["T0RIxn88jfyN6KXjcSXYB9rcxB8GzyP2FdvVLux3fRA="],
+    target_policy = {
+        "uvm_endorsements": {
+            "did": "did:x509:0:sha256:I__iuL25oXEVFdTP_aBLx_eT1RPHbCQ_ECBQfYZpt9s::eku:1.3.6.1.4.1.311.76.59.1.2",
+            "feed": "ContainerPlat-AMD-UVM",
+            "svn": "101",
         },
+        "measurement": [
+            "GCWkvyqcODVmpxdjJoOawONqHFs36eb6vI/dcTDVjO9W9DR1ArlHiVMM7BmKpRVD"
+        ],
+        "policy": ["T0RIxn88jfyN6KXjcSXYB9rcxB8GzyP2FdvVLux3fRA="],
+    }
+    resp = admin_client.put(
+        "/app/processor/policy",
+        json=target_policy,
     )
     assert (
         resp.status_code == 200
-    ), f"Failed to set processor policy: {resp.status_code} {resp.text} | {resp.request.body}"
+    ), f"Failed to set processor policy: {resp.status_code} {resp.text}"
 
     # ---- Register processor ----
     print("Registering processor")
@@ -109,6 +132,10 @@ if __name__ == "__main__":
 
     # ---- Client registration ----
     print("Registering client")
+    resp = client_client.get("/app/ccf-cert")
+    assert resp.status_code == 200
+    client_fingerprint = resp.text
+
     resp = admin_client.put(
         "/app/user",
         json={"cert": client_fingerprint, "policy": USER_POLICY},
@@ -126,7 +153,11 @@ if __name__ == "__main__":
     assert resp.status_code == 200, f"Failed to register case"
     caseId = int(resp.text)
 
-    expected_pre_decision_case_metadata = {'incident': 'The policyholder hit another car.', 'policy': 'This policy covers all claims.', 'decision': {'decision': '', 'processor_fingerprint': ''}}
+    expected_pre_decision_case_metadata = {
+        "incident": "The policyholder hit another car.",
+        "policy": "This policy covers all claims.",
+        "decision": {"decision": "", "processor_fingerprint": ""},
+    }
 
     # Processor requests case and processes it
     print("Getting decision")

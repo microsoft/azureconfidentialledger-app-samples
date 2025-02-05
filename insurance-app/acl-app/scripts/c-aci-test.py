@@ -22,6 +22,9 @@ class HTTPXClient:
     def post(self, path, *args, **kwargs) -> httpx.Response:
         return self.session.request("POST", url=self.acl_url + path, *args, **kwargs)
 
+    def patch(self, path, *args, **kwargs) -> httpx.Response:
+        return self.session.request("PATCH", url=self.acl_url + path, *args, **kwargs)
+
 
 USER_POLICY = "This policy covers all claims."
 USER_INCIDENT = "The policyholder hit another car."
@@ -58,21 +61,46 @@ if __name__ == "__main__":
     signed_bundle = crypto.sign_payload(
         (args.admin_cert, args.admin_key), "userDefinedEndpoints", bundle
     )
-    r = httpx.put(
+    resp = httpx.put(
         f"{args.acl_url}/app/userDefinedEndpoints?api-version={args.api_version}",
         data=signed_bundle,
         headers={"content-type": "application/cose"},
         verify=False,
     )
-    assert r.status_code in {200, 201}, (r.status_code, r.text)
+    assert resp.status_code in {200, 201}, (resp.status_code, resp.text)
     print("Uploaded app as cose signed bundle.")
 
-    res = client_client.get("/app/ccf-cert")
-    assert res.status_code == 200
-    client_fingerprint = res.text
+    # ---- Adding InsuranceAdmin role ----
+    print("Adding ACL roles")
+    resp = admin_client.put(
+        f"/app/roles?api-version={args.api_version}",
+        json={
+            "roles": [
+                {
+                    "role_name": "InsuranceAdmin",
+                    "role_actions": ["/policy/write", "/processor/write"],
+                }
+            ]
+        },
+    )
+    assert resp.status_code == 200 or (
+        resp.status_code == 400 and resp.json()["error"]["code"] == "RoleExists"
+    ), (resp.status_code, resp.text)
+
+    # ---- Registering admin as InsuranceAdmin ----
+    resp = admin_client.get("/app/ccf-cert")
+    assert resp.status_code == 200, (resp.status_code, resp.text)
+    admin_fingerprint = resp.text
+
+    resp = admin_client.patch(
+        f"/app/ledgerUsers/{admin_fingerprint}?api-version={args.api_version}",
+        json={"assignedRoles": ["InsuranceAdmin"]},
+        headers={"content-type": "application/merge-patch+json"},
+    )
+    assert resp.status_code == 200, (resp.status_code, resp.text)
 
     # ---- Register valid policy ----
-    res = admin_client.put(
+    resp = admin_client.put(
         "/app/processor/policy",
         json={
             "uvm_endorsements": {
@@ -85,21 +113,25 @@ if __name__ == "__main__":
         },
         headers={"content-type": "application/json"},
     )
-    print(res.status_code, res.text)
+    print(resp.status_code, resp.text)
     assert (
-        res.status_code == 200
-    ), f"Failed to set processor policy: {res.status_code} {res.text} | {res.request.body}"
+        resp.status_code == 200
+    ), f"Failed to set processor policy: {resp.status_code} {resp.text} | {resp.request.body}"
 
     # ---- Client registration ----
+    resp = client_client.get("/app/ccf-cert")
+    assert resp.status_code == 200, (resp.status_code, resp.text)
+    client_fingerprint = resp.text
+
     policy = input("Enter client policy: ")
-    res = admin_client.put(
+    resp = admin_client.put(
         "/app/user",
         json={"cert": client_fingerprint, "policy": policy},
         headers={"content-type": "application/json"},
     )
     assert (
-        res.status_code == 200
-    ), f"Failed to set client policy: {res.status_code} {res.text}"
+        resp.status_code == 200
+    ), f"Failed to set client policy: {resp.status_code} {resp.text}"
 
     # ---- Case processing ----
     while True:
@@ -107,15 +139,16 @@ if __name__ == "__main__":
         incident = input("Enter incident: ")
 
         # Client registers case
-        res = client_client.post("/app/cases", data=incident)
-        assert res.status_code == 200
-        caseId = int(res.text)
+        resp = client_client.post("/app/cases", data=incident)
+        assert resp.status_code == 200, (resp.status_code, resp.text)
+        caseId = int(resp.text)
 
         while True:
             print("Requesting decision")
-            res = client_client.get(f"/app/cases/indexed/{caseId}")
+            resp = client_client.get(f"/app/cases/indexed/{caseId}")
+            assert resp.status_code == 200, (resp.status_code, resp.text)
 
-            decision = res.json()["metadata"]["decision"]["decision"]
+            decision = resp.json()["metadata"]["decision"]["decision"]
             if decision != "":
                 print(f"======= DECISION : {decision} =======")
                 break
