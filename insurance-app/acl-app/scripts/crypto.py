@@ -69,7 +69,7 @@ def generate_or_read_cert(credential_root=None):
     certpath = None
     if credential_root is not None:
         keypath = f"{credential_root}.privk.pem"
-        certpath = f"{credential_root}.certpath.pem"
+        certpath = f"{credential_root}.cert.pem"
 
     # Files exist so just use them
     if keypath and os.path.isfile(keypath) and certpath and os.path.isfile(certpath):

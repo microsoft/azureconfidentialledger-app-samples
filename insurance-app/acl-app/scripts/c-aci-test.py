@@ -5,7 +5,16 @@ import httpx
 import time
 
 import crypto
+import base64
 
+def hex_to_base64(hex_str):
+    # Convert the hex string to bytes
+    decoded_bytes = bytes.fromhex(hex_str)
+    
+    # Encode the bytes to a base64 string
+    base64_str = base64.b64encode(decoded_bytes).decode('utf-8')
+    
+    return base64_str
 
 class HTTPXClient:
     def __init__(self, acl_url, session_auth):
@@ -95,10 +104,11 @@ if __name__ == "__main__":
     assert resp.status_code == 200, (resp.status_code, resp.text)
 
     # ---- Register valid policy ----
+    policy_b64 = hex_to_base64(args.valid_processor_policy)
     resp = admin_client.put(
         "/app/processor/policy",
         json={
-            "policies": [args.valid_processor_policy],
+            "policies": [policy_b64],
         },
         headers={"content-type": "application/json"},
     )

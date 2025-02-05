@@ -1,13 +1,23 @@
 import argparse
 import json
 import httpx
+import tempfile
+import base64
 
 import time
 
 import crypto
 
-from unit_test_constants import processor_registration_request
+import unit_test_constants
 
+def hex_to_base64(hex_str):
+    # Convert the hex string to bytes
+    decoded_bytes = bytes.fromhex(hex_str)
+    
+    # Encode the bytes to a base64 string
+    base64_str = base64.b64encode(decoded_bytes).decode('utf-8')
+    
+    return base64_str
 
 class HTTPXClient:
     def __init__(self, acl_url, session_auth):
@@ -50,7 +60,17 @@ if __name__ == "__main__":
     client_client = HTTPXClient(args.acl_url, client_identity)
 
     print("Creating processor")
-    processor_keypath, processor_certpath = crypto.generate_or_read_cert()
+    processor_keypath, processor_certpath = None, None
+    with tempfile.NamedTemporaryFile("wb", delete=False, suffix=".pem") as certfile, \
+         tempfile.NamedTemporaryFile("wb", delete=False, suffix=".pem") as keyfile:
+         cert = base64.b64decode(unit_test_constants.processor_cert)
+         certfile.write(cert)
+         certfile.flush()
+         processor_certpath = certfile.name
+         key = base64.b64decode(unit_test_constants.processor_privk)
+         keyfile.write(key)
+         keyfile.flush()
+         processor_keypath = keyfile.name
     processor_identity = processor_certpath, processor_keypath
     processor_client = HTTPXClient(args.acl_url, processor_identity)
 
@@ -102,7 +122,7 @@ if __name__ == "__main__":
     # ---- Register valid policy ----
     print("Setting processor policy")
     target_policy = {
-        "policies": ["T0RIxn88jfyN6KXjcSXYB9rcxB8GzyP2FdvVLux3fRA="],
+        "policies": [hex_to_base64(unit_test_constants.processor_policy)],
     }
     resp = admin_client.put(
         "/app/processor/policy",
@@ -116,7 +136,7 @@ if __name__ == "__main__":
     print("Registering processor")
     resp = processor_client.put(
         "/app/processor",
-        json=processor_registration_request,
+        json=unit_test_constants.processor_registration_request,
     )
     assert (
         resp.status_code == 200

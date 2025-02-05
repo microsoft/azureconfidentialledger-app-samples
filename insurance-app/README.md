@@ -61,8 +61,12 @@ This should allow for compliance with the relevant regulations.
 
 - Ensure you have an instance of Programmable ACL
   - https://learn.microsoft.com/en-us/azure/confidential-ledger/programmability?tabs=CLI
-  - Add an admin role with access to `/policy/write` and `/processor/write`
-  - Using a local ssl certificate and private key, hereafter the admin certificate and private key, register that certificate with the admin role.
+  - Add a certificate based user with `administrator` access, hereafter admin certificate
+    - Generate an ssl certificate and user
+      - In `<repository-root>/insurance-app/acl-app/scripts`
+      - `python -m 'import crypto; crypto.generate_or_read_cert("./admin")`
+      - You may need to `pip install -r requirements.txt`
+      - The resulting `admin.cert.pem` and `admin.privk.pem` are `<admin-cert>` and `<admin-key>` respectively
 - Build the bundle
   - In `<repository-root>/insurance-app/acl-app`
 	- Install dependencies: `npm install .`
