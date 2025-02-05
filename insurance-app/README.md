@@ -70,7 +70,7 @@ This should allow for compliance with the relevant regulations.
 - Test the app is working 
   - `python scripts/unit-test.py --bundle dist/bundle.json --admin-cert <admin-cert> --admin-key <admin-key> --acl-url <acl-url>`
   - You may need to install the pip dependencies `pip install -r <repository-root>/insurance-app/acl-app/scripts/requirements.txt`
-  - This test replays a previously captured, policy, measurement and attestation for the processor
+  - This test replays a previously captured uvm_endorsement and attestation for the processor
 
 ### C-ACI container
 
@@ -107,4 +107,3 @@ Production use should remove this and in the `arm-template.json` directly run th
       - You may have to source or set up a python venv
     - `python scripts/c-aci-test.py --bundle dist/bundle.json --admin-cert <admin-cert> --admin-key <admin-key> --valid-processor-policy <policy> --valid-processor-measurement <measurement> --acl-url <acl-url>`
     - The policy is the last output line from the previous run of `az confcom acipolicygen`, but converted from hex to base64
-    - The measurement comes from C-ACI

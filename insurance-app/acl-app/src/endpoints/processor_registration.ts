@@ -17,12 +17,6 @@ interface UvmEndorsements {
   svn: string;
 }
 
-interface ValidProcessorPolicy {
-  uvm_endorsements: UvmEndorsements;
-  measurement: string[];
-  policy: string[];
-}
-
 export interface ProcessorMetadata {
   uvm_endorsements: UvmEndorsements;
   measurement: string;
@@ -32,7 +26,7 @@ export interface ProcessorMetadata {
 const validProcessorPolicy = ccfapp.typedKv(
   MAP_PREFIX + "validProcessorProperties",
   ccfapp.arrayBuffer,
-  ccfapp.json<ValidProcessorPolicy>()
+  ccfapp.json<string[]>()
 );
 const processors = ccfapp.typedKv(
   MAP_PREFIX + "validProcessors",
@@ -55,33 +49,14 @@ export function getProcessorMetadata(processor_cert_fingerprint: string): Proces
 }
 
 function validateProcessorMetadata(properties: ProcessorMetadata) {
-  let valid_properties = validProcessorPolicy.get(SINGLETON_KEY);
-  if (
-    properties.uvm_endorsements.did !== valid_properties.uvm_endorsements.did
-  ) {
-    throw new Error("DID did not match");
-  }
-  if (
-    properties.uvm_endorsements.feed !== valid_properties.uvm_endorsements.feed
-  ) {
-    throw new Error("FEED did not match");
-  }
-  if (
-    properties.uvm_endorsements.svn < valid_properties.uvm_endorsements.svn
-  ) {
-    throw new Error("SVN is too old");
-  }
-
-  if (!valid_properties.measurement.includes(properties.measurement)) {
-    throw new Error("Measurement is invalid.");
-  }
-  if (!valid_properties.policy.includes(properties.policy)) {
+  let valid_policies = validProcessorPolicy.get(SINGLETON_KEY);
+  if (!valid_policies.includes(properties.policy)) {
     throw new Error("UVM's policy is invalid.");
   }
 }
 
 export function setValidProcessorPolicy(
-  request: ccfapp.Request<ValidProcessorPolicy>
+  request: ccfapp.Request<{policies: string[]}>
 ): ccfapp.Response<any | string> {
   const callerId = acl.certUtils.convertToAclFingerprintFormat();
   const actionPermitted = acl.authz.actionAllowed(callerId, "/processor/write");
@@ -89,52 +64,29 @@ export function setValidProcessorPolicy(
     return {
       statusCode: 403,
       body: `${callerId} is not authorized to set uvm endorsements.`
-    };
+    }
   }
 
-  let { uvm_endorsements, measurement, policy } = request.body.json();
-  let processor_policy: ValidProcessorPolicy;
   try {
+    var {policies} = request.body.json();
     if (
-      !uvm_endorsements ||
-      !uvm_endorsements.did ||
-      !uvm_endorsements.feed ||
-      !uvm_endorsements.svn
-    ) {
-      return { statusCode: 400, body:  "Missing or invalid uvm endorsements."};
-    }
-
-    if (
-      !measurement ||
-      !Array.isArray(measurement) ||
-      !measurement.every((item) => typeof item === "string")
-    ) {
-      return { statusCode: 400, body:  "Missing or invalid measurements"};
-    }
-
-    if (
-      !policy ||
-      !Array.isArray(policy) ||
-      !policy.every((item) => typeof item === "string")
+      !policies ||
+      !Array.isArray(policies) ||
+      !policies.every((item) => typeof item === "string")
     ) {
       return { statusCode: 400, body:  "Missing or invalid policies"};
     }
-    processor_policy = {
-      uvm_endorsements,
-      measurement,
-      policy,
-    };
   } catch (error) {
     return { statusCode: 400, body:  "Error while parsing policy: " + error.message};
   }
 
-  validProcessorPolicy.set(SINGLETON_KEY, processor_policy);
+  validProcessorPolicy.set(SINGLETON_KEY, policies);
   return { statusCode: 200 };
 }
 
 export function getValidProcessorPolicy(
   request: ccfapp.Request
-): ccfapp.Response<ValidProcessorPolicy> {
+): ccfapp.Response<string[]> {
   return {
     statusCode: 200,
     body: validProcessorPolicy.get(SINGLETON_KEY),

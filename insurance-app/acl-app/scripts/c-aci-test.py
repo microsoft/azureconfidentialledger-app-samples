@@ -34,11 +34,6 @@ parser.add_argument("--admin-cert", type=str, help="Path to ACL admin certificat
 parser.add_argument("--admin-key", type=str, help="Path to ACL admin private key.")
 parser.add_argument("--bundle", type=str, help="Path to app bundle.json")
 parser.add_argument(
-    "--valid-processor-measurement",
-    type=str,
-    help="Base64 encoded processor measurement.",
-)
-parser.add_argument(
     "--valid-processor-policy", type=str, help="Base64 encoded processor policy."
 )
 parser.add_argument("--acl-url", type=str, default="https://localhost:8000")
@@ -103,13 +98,7 @@ if __name__ == "__main__":
     resp = admin_client.put(
         "/app/processor/policy",
         json={
-            "uvm_endorsements": {
-                "did": "did:x509:0:sha256:I__iuL25oXEVFdTP_aBLx_eT1RPHbCQ_ECBQfYZpt9s::eku:1.3.6.1.4.1.311.76.59.1.2",
-                "feed": "ContainerPlat-AMD-UVM",
-                "svn": "101",
-            },
-            "measurement": [args.valid_processor_measurement],
-            "policy": [args.valid_processor_policy],
+            "policies": [args.valid_processor_policy],
         },
         headers={"content-type": "application/json"},
     )
