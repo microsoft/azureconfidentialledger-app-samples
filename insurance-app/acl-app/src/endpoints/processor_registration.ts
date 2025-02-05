@@ -161,7 +161,7 @@ export function registerProcessor(
   const expected_report_data = ccfapp
     .typedArray(Uint8Array)
     .decode(ccf.crypto.digest("SHA-256", array_buf_callerId));
-  if (equal_uint8array(expected_report_data, report_data.slice(0, 256))) {
+  if (!equal_uint8array(expected_report_data.slice(0, 32), report_data.slice(0, 32))) {
     return {
       statusCode: 400,
       body: "Report data " +
@@ -169,7 +169,7 @@ export function registerProcessor(
           report_data: Base64.fromUint8Array(
             ccfapp
               .typedArray(Uint8Array)
-              .decode(attestation_result.attestation.report_data.slice(0, 255))
+              .decode(attestation_result.attestation.report_data.slice(0, 32))
           ),
           cert: Base64.fromUint8Array(
             ccfapp.typedArray(Uint8Array).decode(expected_report_data)
