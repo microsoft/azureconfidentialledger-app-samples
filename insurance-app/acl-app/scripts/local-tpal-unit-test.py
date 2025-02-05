@@ -4,7 +4,7 @@ import tempfile
 import sys
 import requests
 
-from test_constants import processor_registration_request
+from unit_test_constants import processor_registration_request
 
 USER_POLICY = "This policy covers all claims."
 USER_INCIDENT = "The policyholder hit another car."
