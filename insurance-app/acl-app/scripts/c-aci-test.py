@@ -1,55 +1,26 @@
 import argparse
 import json
-import requests
+import httpx
 
 import time
 
-import ccf.cose
 import crypto
 
-# disables the "verify=False" warnings, as the request to pin the ca raise the warning
-import urllib3
 
-urllib3.disable_warnings()
-
-
-def sign_bundle(identity, msg_type, bundle):
-    (certpath, keypath) = identity
-    serialised_bundle = json.dumps(bundle).encode()
-    with open(keypath, "r") as key_file:
-        key = key_file.read()
-    if not key:
-        raise ValueError("Key file is empty or improperly formatted.")
-    with open(certpath, "r") as cert_file:
-        cert = cert_file.read()
-    if not cert:
-        raise ValueError("Cert file is empty or improperly formatted.")
-    phdr = {
-        "acl.msg.type": msg_type,
-        "acl.msg.created_at": int(time.time()),
-    }
-    return ccf.cose.create_cose_sign1(serialised_bundle, key, cert, phdr)
-
-
-class RequestsClient:
+class HTTPXClient:
     def __init__(self, acl_url, session_auth):
         self.acl_url = acl_url
         self.session_auth = session_auth
+        self.session = httpx.Client(verify=False, cert=session_auth)
 
-    def get(self, path, *args, **kwargs) -> requests.Response:
-        return requests.get(
-            self.acl_url + path, *args, cert=self.session_auth, verify=False, **kwargs
-        )
+    def get(self, path, *args, **kwargs) -> httpx.Response:
+        return self.session.request("GET", url=self.acl_url + path, *args, **kwargs)
 
-    def put(self, path, *args, **kwargs) -> requests.Response:
-        return requests.put(
-            self.acl_url + path, *args, cert=self.session_auth, verify=False, **kwargs
-        )
+    def put(self, path, *args, **kwargs) -> httpx.Response:
+        return self.session.request("PUT", url=self.acl_url + path, *args, **kwargs)
 
-    def post(self, path, *args, **kwargs) -> requests.Response:
-        return requests.post(
-            self.acl_url + path, *args, cert=self.session_auth, verify=False, **kwargs
-        )
+    def post(self, path, *args, **kwargs) -> httpx.Response:
+        return self.session.request("POST", url=self.acl_url + path, *args, **kwargs)
 
 
 USER_POLICY = "This policy covers all claims."
@@ -58,6 +29,7 @@ USER_INCIDENT = "The policyholder hit another car."
 parser = argparse.ArgumentParser()
 parser.add_argument("--admin-cert", type=str, help="Path to ACL admin certificate.")
 parser.add_argument("--admin-key", type=str, help="Path to ACL admin private key.")
+parser.add_argument("--bundle", type=str, help="Path to app bundle.json")
 parser.add_argument(
     "--valid-processor-measurement",
     type=str,
@@ -73,17 +45,33 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     admin_identity = (args.admin_cert, args.admin_key)
-    admin_client = RequestsClient(args.acl_url, admin_identity)
+    admin_client = HTTPXClient(args.acl_url, admin_identity)
 
     client_keypath, client_certpath = crypto.generate_or_read_cert()
     client_identity = client_certpath, client_keypath
-    client_client = RequestsClient(args.acl_url, client_identity)
+    client_client = HTTPXClient(args.acl_url, client_identity)
+
+    # ---- Upload bundle ----
+    module_name = "insurance_app.js"
+    bundle = json.loads(open(args.bundle).read())
+
+    signed_bundle = crypto.sign_payload(
+        (args.admin_cert, args.admin_key), "userDefinedEndpoints", bundle
+    )
+    r = httpx.put(
+        f"{args.acl_url}/app/userDefinedEndpoints?api-version={args.api_version}",
+        data=signed_bundle,
+        headers={"content-type": "application/cose"},
+        verify=False,
+    )
+    assert r.status_code in {200, 201}, (r.status_code, r.text)
+    print("Uploaded app as cose signed bundle.")
 
     res = client_client.get("/app/ccf-cert")
     assert res.status_code == 200
     client_fingerprint = res.text
 
-    # Register valid policy
+    # ---- Register valid policy ----
     res = admin_client.put(
         "/app/processor/policy",
         json={
@@ -106,10 +94,7 @@ if __name__ == "__main__":
     policy = input("Enter client policy: ")
     res = admin_client.put(
         "/app/user",
-        json={
-            "cert": client_fingerprint,
-            "policy": policy,
-        },
+        json={"cert": client_fingerprint, "policy": policy},
         headers={"content-type": "application/json"},
     )
     assert (
@@ -128,9 +113,7 @@ if __name__ == "__main__":
 
         while True:
             print("Requesting decision")
-            res = client_client.get(
-                f"/app/cases/indexed/{caseId}",
-            )
+            res = client_client.get(f"/app/cases/indexed/{caseId}")
 
             decision = res.json()["metadata"]["decision"]["decision"]
             if decision != "":

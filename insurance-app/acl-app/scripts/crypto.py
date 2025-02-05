@@ -19,6 +19,10 @@ from cryptography.x509.oid import NameOID
 import os
 import tempfile
 
+import json
+import time
+import ccf.cose
+
 _RECOMMENDED_RSA_PUBLIC_EXPONENT = 65537
 
 
@@ -45,11 +49,7 @@ def generate_cert(
 ) -> str:
     priv = load_pem_private_key(priv_key_pem.encode("ascii"), None, default_backend())
     pub = priv.public_key()
-    subject = issuer = x509.Name(
-        [
-            x509.NameAttribute(NameOID.COMMON_NAME, cn),
-        ]
-    )
+    subject = issuer = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, cn)])
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)
@@ -112,3 +112,18 @@ def generate_or_read_cert(credential_root=None):
             certpath = certfile.name
 
             return keypath, certpath
+
+
+def sign_payload(identity, msg_type: str, json_payload: dict) -> bytes:
+    cert, key = identity
+    serialised_payload = json.dumps(json_payload).encode()
+    with open(key, "r") as key_file:
+        key = key_file.read()
+    if not key:
+        raise ValueError("Key file is empty or improperly formatted.")
+    with open(cert, "r") as cert_file:
+        cert = cert_file.read()
+    if not cert:
+        raise ValueError("Cert file is empty or improperly formatted.")
+    phdr = {"acl.msg.type": msg_type, "acl.msg.created_at": int(time.time())}
+    return ccf.cose.create_cose_sign1(serialised_payload, key, cert, phdr)

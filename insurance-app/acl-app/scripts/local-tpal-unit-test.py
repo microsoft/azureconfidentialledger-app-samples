@@ -53,8 +53,7 @@ if __name__ == "__main__":
         admin_cert_identity, "userDefinedEndpoints", bundle
     )
     with tester.client_set(
-        endpoints=test_harness.endpoints,
-        network_cert_file=test_harness.ca,
+        endpoints=test_harness.endpoints, network_cert_file=test_harness.ca
     ) as cose_installer:
         cose_installer.put(
             f"/app/userDefinedEndpoints?api-version={test_harness.api_version}",
@@ -76,7 +75,7 @@ if __name__ == "__main__":
                         {
                             "role_name": "InsuranceAdmin",
                             "role_actions": ["/policy/write", "/processor/write"],
-                        },
+                        }
                     ]
                 },
                 headers={"content-type": "application/json"},
@@ -171,10 +170,7 @@ if __name__ == "__main__":
             # ---- Client registration ----
             admin_client.put(
                 "/app/user",
-                body={
-                    "cert": client_fingerprint,
-                    "policy": USER_POLICY,
-                },
+                body={"cert": client_fingerprint, "policy": USER_POLICY},
                 headers={"content-type": "application/json"},
             )
 
@@ -186,19 +182,13 @@ if __name__ == "__main__":
             caseId = int(resp.body.text())
 
             # Processor requests case and processes it
-            resp = processor_client.get(
-                "/app/cases/next",
-            )
+            resp = processor_client.get("/app/cases/next")
 
             # No decision while processing
-            resp = client.get(
-                f"/app/cases/indexed/{caseId}",
-            )
+            resp = client.get(f"/app/cases/indexed/{caseId}")
 
             # Requesting another case returns current one
-            resp = processor_client.get(
-                "/app/cases/next",
-            )
+            resp = processor_client.get("/app/cases/next")
 
             # Processor stores decision
             resp = processor_client.post(
@@ -212,8 +202,6 @@ if __name__ == "__main__":
             )
 
             # Client can retrieve the case
-            resp = client.get(
-                f"/app/cases/indexed/{caseId}",
-            )
+            resp = client.get(f"/app/cases/indexed/{caseId}")
             print(resp.body.json())
             assert resp.body.json()["metadata"]["decision"]["decision"] == "approve"
