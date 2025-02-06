@@ -114,7 +114,7 @@ class ProcessorDaemon:
             raise ValueError(f"Body does not contain caseId: {body}")
         try:
             int(body["caseId"])
-        except:
+        except ValueError:
             raise ValueError(f"Body.caseId is not an integer: {body['caseId']}")
         if "metadata" not in body:
             raise ValueError(f"Body does not contain any metadata: {body}")

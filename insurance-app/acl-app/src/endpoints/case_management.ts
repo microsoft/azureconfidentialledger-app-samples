@@ -6,7 +6,7 @@ import { getPolicy } from "./user_registration";
 const kvCaseId = ccfapp.typedKv(
   MAP_PREFIX + "caseId",
   ccfapp.arrayBuffer,
-  ccfapp.int32
+  ccfapp.int32,
 );
 
 interface Decision {
@@ -23,13 +23,13 @@ interface CaseMetadata {
 const kvCases = ccfapp.typedKv(
   "caseMetadata",
   ccfapp.int32,
-  ccfapp.json<CaseMetadata>()
+  ccfapp.json<CaseMetadata>(),
 );
 
 const kvCaseQueue = ccfapp.typedKv(
   MAP_PREFIX + "caseQueue",
   ccfapp.arrayBuffer,
-  ccfapp.json<number[]>()
+  ccfapp.json<number[]>(),
 );
 
 function getCaseQueue(): number[] {
@@ -41,7 +41,7 @@ function getCaseQueue(): number[] {
 }
 
 export function registerCase(
-  request: ccfapp.Request<string>
+  request: ccfapp.Request<string>,
 ): ccfapp.Response<string> {
   let incident = request.body.text();
 
@@ -83,7 +83,7 @@ interface RespNextCase {
 }
 
 export function nextCase(
-  request: ccfapp.Request
+  request: ccfapp.Request,
 ): ccfapp.Response<RespNextCase | string> {
   let caseQueue = getCaseQueue();
 
@@ -119,7 +119,7 @@ interface RespCaseDecision {
 }
 
 export function getCaseMetadata(
-  request: ccfapp.Request
+  request: ccfapp.Request,
 ): ccfapp.Response<RespCaseDecision | string> {
   try {
     const caseIdParam = request.params["caseId"];
@@ -158,7 +158,7 @@ interface ReqPutCaseDecision {
 }
 
 export function putCaseDecision(
-  request: ccfapp.Request<ReqPutCaseDecision>
+  request: ccfapp.Request<ReqPutCaseDecision>,
 ): ccfapp.Response<any | string> {
   try {
     const caseIdParam = request.params["caseId"];

@@ -18,7 +18,7 @@ sequenceDiagram
     participant S as Attestation Sidecar
   end
 
-  note over Admin,S: Processor registration 
+  note over Admin,S: Processor registration
 
   Admin ->> A: set valid processor specification
 
@@ -41,7 +41,7 @@ sequenceDiagram
   A ->>+ P: Job(caseId, incident, policy)
   note over P: Use Phi 3 to<br>process job
   P ->>-A: Store decision for caseId
-  
+
   loop Poll for Decision
   C <<->> A: Check case
   end
@@ -51,6 +51,7 @@ sequenceDiagram
 [Detailed diagram](./acl-app/README.md)
 
 ## GDPR considerations
+
 If the incident description is considered PII, then it _must not_ be stored in the ledger, as it cannot be removed at a later date.
 Instead we suggest that users store a digest (SHA-256 hash) of the incident description in the ledger and store the actual description of the incident in a separate database, that the processor then fetches the description from.
 This should allow for compliance with the relevant regulations.
@@ -69,9 +70,9 @@ This should allow for compliance with the relevant regulations.
       - The resulting `admin.cert.pem` and `admin.privk.pem` are `<admin-cert>` and `<admin-key>` respectively
 - Build the bundle
   - In `<repository-root>/insurance-app/acl-app`
-	- Install dependencies: `npm install .`
-	- Build the bundle: `npm run build`
-- Test the app is working 
+  - Install dependencies: `npm install .`
+  - Build the bundle: `npm run build`
+- Test the app is working
   - `python scripts/unit-test.py --bundle dist/bundle.json --admin-cert <admin-cert> --admin-key <admin-key> --acl-url <acl-url>`
   - You may need to install the pip dependencies `pip install -r <repository-root>/insurance-app/acl-app/scripts/requirements.txt`
   - This test replays a previously captured uvm_endorsement and attestation for the processor
@@ -93,7 +94,7 @@ This should allow for compliance with the relevant regulations.
 - Update `<repository-root>/insurance-app/c-aci/env.sh`
 - Prepare image and arm-template
   - `HUGGINGFACE_TOKEN=<hugging_face_token> bash prepare-deploy-aci.sh`
-	- Copy the hash in the final line of output for the policy
+  - Copy the hash in the final line of output for the policy
 - Deploy to c-aci
   - `bash deploy-aci.sh`
 

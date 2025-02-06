@@ -2,4 +2,7 @@ grpcio
 protobuf
 pyOpenSSL
 requests
+types-requests
 llama-cpp-python
+types-protobuf
+flask

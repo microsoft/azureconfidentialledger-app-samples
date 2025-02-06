@@ -1,9 +1,5 @@
 import * as ccfapp from "@microsoft/ccf-app";
-import {
-  equal_uint8array,
-  MAP_PREFIX,
-  SINGLETON_KEY,
-} from "./common";
+import { equal_uint8array, MAP_PREFIX, SINGLETON_KEY } from "./common";
 import { Base64 } from "js-base64";
 import {
   ccf,
@@ -26,12 +22,12 @@ export interface ProcessorMetadata {
 const validProcessorPolicy = ccfapp.typedKv(
   MAP_PREFIX + "validProcessorProperties",
   ccfapp.arrayBuffer,
-  ccfapp.json<string[]>()
+  ccfapp.json<string[]>(),
 );
 const processors = ccfapp.typedKv(
   MAP_PREFIX + "validProcessors",
   ccfapp.string,
-  ccfapp.json<ProcessorMetadata>()
+  ccfapp.json<ProcessorMetadata>(),
 );
 
 export function isValidProcessor(processor_cert_fingerprint: string): boolean {
@@ -44,7 +40,9 @@ export function isValidProcessor(processor_cert_fingerprint: string): boolean {
   return true;
 }
 
-export function getProcessorMetadata(processor_cert_fingerprint: string): ProcessorMetadata {
+export function getProcessorMetadata(
+  processor_cert_fingerprint: string,
+): ProcessorMetadata {
   return processors.get(processor_cert_fingerprint);
 }
 
@@ -56,28 +54,31 @@ function validateProcessorMetadata(properties: ProcessorMetadata) {
 }
 
 export function setValidProcessorPolicy(
-  request: ccfapp.Request<{policies: string[]}>
+  request: ccfapp.Request<{ policies: string[] }>,
 ): ccfapp.Response<any | string> {
   const callerId = acl.certUtils.convertToAclFingerprintFormat();
   const actionPermitted = acl.authz.actionAllowed(callerId, "/processor/write");
   if (!actionPermitted) {
     return {
       statusCode: 403,
-      body: `${callerId} is not authorized to set uvm endorsements.`
-    }
+      body: `${callerId} is not authorized to set uvm endorsements.`,
+    };
   }
 
   try {
-    var {policies} = request.body.json();
+    var { policies } = request.body.json();
     if (
       !policies ||
       !Array.isArray(policies) ||
       !policies.every((item) => typeof item === "string")
     ) {
-      return { statusCode: 400, body:  "Missing or invalid policies"};
+      return { statusCode: 400, body: "Missing or invalid policies" };
     }
   } catch (error) {
-    return { statusCode: 400, body:  "Error while parsing policy: " + error.message};
+    return {
+      statusCode: 400,
+      body: "Error while parsing policy: " + error.message,
+    };
   }
 
   validProcessorPolicy.set(SINGLETON_KEY, policies);
@@ -85,7 +86,7 @@ export function setValidProcessorPolicy(
 }
 
 export function getValidProcessorPolicy(
-  request: ccfapp.Request
+  request: ccfapp.Request,
 ): ccfapp.Response<string[]> {
   return {
     statusCode: 200,
@@ -100,7 +101,7 @@ interface ReqAddProcessor {
 }
 
 export function registerProcessor(
-  request: ccfapp.Request<ReqAddProcessor>
+  request: ccfapp.Request<ReqAddProcessor>,
 ): ccfapp.Response<string> {
   let bytes_attestation;
   let bytes_platform_certificates;
@@ -110,7 +111,7 @@ export function registerProcessor(
       request.body.json();
 
     if (!attestation || typeof attestation !== "string") {
-      return { statusCode: 400, body:  "Missing or invalid attestation"};
+      return { statusCode: 400, body: "Missing or invalid attestation" };
     }
 
     bytes_attestation = ccfapp
@@ -118,14 +119,17 @@ export function registerProcessor(
       .encode(Base64.toUint8Array(attestation));
 
     if (!platform_certificates || typeof platform_certificates !== "string") {
-      return { statusCode: 400, body:  "Missing or invalid platform_certificates."};
+      return {
+        statusCode: 400,
+        body: "Missing or invalid platform_certificates.",
+      };
     }
     bytes_platform_certificates = ccfapp
       .typedArray(Uint8Array)
       .encode(Base64.toUint8Array(platform_certificates));
 
     if (!uvm_endorsements || typeof uvm_endorsements !== "string") {
-      return { statusCode: 400, body:  "Missing or invalid uvm_endorsements."};
+      return { statusCode: 400, body: "Missing or invalid uvm_endorsements." };
     }
     bytes_uvm_endorsements = ccfapp
       .typedArray(Uint8Array)
@@ -133,7 +137,7 @@ export function registerProcessor(
   } catch (error) {
     return {
       statusCode: 400,
-      body : "Error while parsing processor metadata: " + error.message
+      body: "Error while parsing processor metadata: " + error.message,
     };
   }
 
@@ -142,12 +146,12 @@ export function registerProcessor(
     attestation_result = snp_attestation.verifySnpAttestation(
       bytes_attestation,
       bytes_platform_certificates,
-      bytes_uvm_endorsements
+      bytes_uvm_endorsements,
     );
   } catch (error) {
     return {
       statusCode: 400,
-      body: "Error while verifying attestation: " + error.message
+      body: "Error while verifying attestation: " + error.message,
     };
   }
 
@@ -161,32 +165,38 @@ export function registerProcessor(
   const expected_report_data = ccfapp
     .typedArray(Uint8Array)
     .decode(ccf.crypto.digest("SHA-256", array_buf_callerId));
-  if (!equal_uint8array(expected_report_data.slice(0, 32), report_data.slice(0, 32))) {
+  if (
+    !equal_uint8array(
+      expected_report_data.slice(0, 32),
+      report_data.slice(0, 32),
+    )
+  ) {
     return {
       statusCode: 400,
-      body: "Report data " +
+      body:
+        "Report data " +
         JSON.stringify({
           report_data: Base64.fromUint8Array(
             ccfapp
               .typedArray(Uint8Array)
-              .decode(attestation_result.attestation.report_data.slice(0, 32))
+              .decode(attestation_result.attestation.report_data.slice(0, 32)),
           ),
           cert: Base64.fromUint8Array(
-            ccfapp.typedArray(Uint8Array).decode(expected_report_data)
+            ccfapp.typedArray(Uint8Array).decode(expected_report_data),
           ),
-        })
+        }),
     };
   }
 
   let measurement_b64 = Base64.fromUint8Array(
     ccfapp
       .typedArray(Uint8Array)
-      .decode(attestation_result.attestation.measurement)
+      .decode(attestation_result.attestation.measurement),
   );
   let policy_b64 = Base64.fromUint8Array(
     ccfapp
       .typedArray(Uint8Array)
-      .decode(attestation_result.attestation.host_data)
+      .decode(attestation_result.attestation.host_data),
   );
   let metadata: ProcessorMetadata = {
     uvm_endorsements: attestation_result.uvm_endorsements,
@@ -197,10 +207,12 @@ export function registerProcessor(
   try {
     validateProcessorMetadata(metadata);
   } catch (error) {
-    return { statusCode: 400, body:  JSON.stringify({
-      errormessage: error.message,
-      attested_metadata: metadata,
-    })
+    return {
+      statusCode: 400,
+      body: JSON.stringify({
+        errormessage: error.message,
+        attested_metadata: metadata,
+      }),
     };
   }
 

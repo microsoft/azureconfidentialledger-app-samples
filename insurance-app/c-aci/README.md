@@ -17,9 +17,9 @@ sequenceDiagram
   S -->> P: Attestation
   P ->> A: Register(attestation)
 
-  loop 
+  loop
   loop Check for available job
-  P <<->> A: 
+  P <<->> A:
   end
   A ->>+ P: Job(incident, policy)
   note over P: Use Phi 3 to<br>process job

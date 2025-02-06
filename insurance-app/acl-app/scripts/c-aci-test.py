@@ -7,14 +7,16 @@ import time
 import crypto
 import base64
 
+
 def hex_to_base64(hex_str):
     # Convert the hex string to bytes
     decoded_bytes = bytes.fromhex(hex_str)
-    
+
     # Encode the bytes to a base64 string
-    base64_str = base64.b64encode(decoded_bytes).decode('utf-8')
-    
+    base64_str = base64.b64encode(decoded_bytes).decode("utf-8")
+
     return base64_str
+
 
 class HTTPXClient:
     def __init__(self, acl_url, session_auth):
@@ -115,7 +117,7 @@ if __name__ == "__main__":
     print(resp.status_code, resp.text)
     assert (
         resp.status_code == 200
-    ), f"Failed to set processor policy: {resp.status_code} {resp.text} | {resp.request.body}"
+    ), f"Failed to set processor policy: {resp.status_code} {resp.text} | {resp.request.text}"
 
     # ---- Client registration ----
     resp = client_client.get("/app/ccf-cert")

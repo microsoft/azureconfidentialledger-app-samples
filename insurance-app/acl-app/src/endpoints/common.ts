@@ -52,7 +52,7 @@ export function equal_uint8array(a: Uint8Array, b: Uint8Array): boolean {
 }
 
 export function getCallerCert(
-  request: ccfapp.Request<any>
+  request: ccfapp.Request<any>,
 ): ccfapp.Response<string> {
   const callerId = acl.certUtils.convertToAclFingerprintFormat();
   return {

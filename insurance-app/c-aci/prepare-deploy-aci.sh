@@ -7,7 +7,7 @@ ImageName=${ACRPrefix}.azurecr.io/${PrimaryName}
 docker build -t $ImageName --build-arg HUGGINGFACE_TOKEN=$HUGGINGFACE_TOKEN .
 docker login \
   -u 00000000-0000-0000-0000-000000000000 \
-  -p $(az acr login --name ${ACRPrefix} --expose-token --output tsv --query accessToken) \
+  -p "$(az acr login --name ${ACRPrefix} --expose-token --output tsv --query accessToken)" \
   ${ACRPrefix}.azurecr.io
 docker push $ImageName
 

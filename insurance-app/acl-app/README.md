@@ -13,7 +13,7 @@ sequenceDiagram
     participant S as Attestation Sidecar
   end
 
-  note over Admin,S: Processor registration 
+  note over Admin,S: Processor registration
 
   Admin ->> A: Set valid processor specification<br>PUT /app/processor/policy
 
@@ -36,7 +36,7 @@ sequenceDiagram
   A ->>+ P: Job(caseId, incident, policy)
   note over P: Use Phi 3 to<br>process job
   P ->>-A: Store decision for caseId<br>POST /app/cases/indexed/{caseId}/decision
-  
+
   loop Poll for Decision
   C <<->> A: GET /cases/indexed/{caseId}
   end

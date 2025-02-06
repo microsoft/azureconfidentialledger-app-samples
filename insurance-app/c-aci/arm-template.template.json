@@ -120,11 +120,7 @@
             "name": "[format('{0}-attestation-sidecar', parameters('name'))]",
             "properties": {
               "image": "[parameters('sidecar-image')]",
-              "command": [
-                "app",
-                "-socket-address",
-                "/mnt/uds/sock"
-              ],
+              "command": ["app", "-socket-address", "/mnt/uds/sock"],
               "volumeMounts": [
                 {
                   "name": "attest-uds",

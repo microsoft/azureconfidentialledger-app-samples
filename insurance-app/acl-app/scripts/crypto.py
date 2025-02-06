@@ -1,7 +1,7 @@
 # Adapted from CCF infrastructure
 
 import datetime
-from typing import Dict, Optional, Tuple
+from typing import Tuple
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -91,7 +91,7 @@ def generate_or_read_cert(credential_root=None):
         return keypath, certpath
 
     # Generate an ephemeral key
-    if keypath == None:
+    if keypath is None:
         print("Using ephemeral credentials")
         with tempfile.NamedTemporaryFile(
             "w", suffix=".pem", delete=False

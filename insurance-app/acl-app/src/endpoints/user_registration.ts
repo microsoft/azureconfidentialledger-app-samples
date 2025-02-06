@@ -4,7 +4,7 @@ import { ErrorResponse, errorResponse, MAP_PREFIX } from "./common";
 const userPolicies = ccfapp.typedKv(
   MAP_PREFIX + "userPolicy",
   ccfapp.string,
-  ccfapp.string
+  ccfapp.string,
 );
 
 export function getPolicy(user_fingerprint: string): string | undefined {
@@ -17,7 +17,7 @@ interface ReqRegisterUserPolicy {
 }
 
 export function getUserPolicy(
-  request: ccfapp.Request<any>
+  request: ccfapp.Request<any>,
 ): ccfapp.Response<string | ErrorResponse> {
   const callerId = acl.certUtils.convertToAclFingerprintFormat();
   if (!userPolicies.has(callerId)) {
@@ -30,14 +30,14 @@ export function getUserPolicy(
 }
 
 export function setUserPolicy(
-  request: ccfapp.Request<ReqRegisterUserPolicy>
+  request: ccfapp.Request<ReqRegisterUserPolicy>,
 ): ccfapp.Response {
   const callerId = acl.certUtils.convertToAclFingerprintFormat();
   const actionPermitted = acl.authz.actionAllowed(callerId, "/policy/write");
   if (!actionPermitted) {
     return errorResponse(
       403,
-      `${callerId} is not authorized to set an insurance policy.`
+      `${callerId} is not authorized to set an insurance policy.`,
     );
   }
 
@@ -57,6 +57,6 @@ export function setUserPolicy(
   userPolicies.set(cert, policy);
 
   return {
-    statusCode: 200
+    statusCode: 200,
   };
 }

@@ -1,24 +1,24 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
-  "parameters":{
-    "name":{
-      "value":""
-    },
-    "ssh":{
+  "parameters": {
+    "name": {
       "value": ""
     },
-    "primary-image":{
-      "value":""
+    "ssh": {
+      "value": ""
     },
-    "sidecar-image":{
-      "value":""
+    "primary-image": {
+      "value": ""
     },
-    "acr-token":{
-      "value":""
+    "sidecar-image": {
+      "value": ""
     },
-    "acr-name":{
-      "value":""
+    "acr-token": {
+      "value": ""
+    },
+    "acr-name": {
+      "value": ""
     }
   }
 }
