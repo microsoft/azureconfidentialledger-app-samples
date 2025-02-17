@@ -27,6 +27,7 @@ Alternatively, if your organisation supports it, you can checkout this repositor
 Please choose a sample to learn more.
 
 - [Banking App](./banking-app/README.md)
+- [Insurance App](./insurance-app/README.md)
 
 ## Contributing
 

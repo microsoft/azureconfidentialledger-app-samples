@@ -1,0 +1,80 @@
+{
+  "endpoints": {
+    "/ccf-cert": {
+      "get": {
+        "js_module": "endpoints/common.js",
+        "js_function": "getCallerCert",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      }
+    },
+    "/processor/policy": {
+      "get": {
+        "js_module": "endpoints/processor_registration.js",
+        "js_function": "getValidProcessorPolicy",
+        "forwarding_required": "always",
+        "authn_policies": ["no_auth"]
+      },
+      "put": {
+        "js_module": "endpoints/processor_registration.js",
+        "js_function": "setValidProcessorPolicy",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      }
+    },
+    "/processor": {
+      "put": {
+        "js_module": "endpoints/processor_registration.js",
+        "js_function": "registerProcessor",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      }
+    },
+    "/user": {
+      "get": {
+        "js_module": "endpoints/user_registration.js",
+        "js_function": "getUserPolicy",
+        "forwarding_required": "always",
+        "authn_policies": ["no_auth"]
+      },
+      "put": {
+        "js_module": "endpoints/user_registration.js",
+        "js_function": "setUserPolicy",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      }
+    },
+    "/cases": {
+      "post": {
+        "js_module": "endpoints/case_management.js",
+        "js_function": "registerCase",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      }
+    },
+    "/cases/next": {
+      "get": {
+        "js_module": "endpoints/case_management.js",
+        "js_function": "nextCase",
+        "forwarding_required": "always",
+        "authn_policies": ["no_auth"]
+      }
+    },
+    "/cases/indexed/{caseId}": {
+      "get": {
+        "js_module": "endpoints/case_management.js",
+        "js_function": "getCaseMetadata",
+        "forwarding_required": "always",
+        "authn_policies": ["no_auth"]
+      }
+    },
+    "/cases/indexed/{caseId}/decision": {
+      "post": {
+        "js_module": "endpoints/case_management.js",
+        "js_function": "putCaseDecision",
+        "forwarding_required": "always",
+        "authn_policies": ["any_cert"]
+      }
+    }
+  }
+}

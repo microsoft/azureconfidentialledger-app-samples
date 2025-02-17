@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "name": {
+      "value": ""
+    },
+    "ssh": {
+      "value": ""
+    },
+    "primary-image": {
+      "value": ""
+    },
+    "sidecar-image": {
+      "value": ""
+    },
+    "acr-token": {
+      "value": ""
+    },
+    "acr-name": {
+      "value": ""
+    }
+  }
+}
