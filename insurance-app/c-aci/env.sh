@@ -1,4 +1,4 @@
-export ACRPrefix=cjensentest1
-export PrimaryName="tpal-insurance-sample"
-export ResourceGroup="cjensen-1"
-export DeploymentName="cjensen-1-tpal-insurance-sample"
+export ACRPrefix="acl-azurecr"
+export PrimaryName="acl-insurance-processor-container"
+export ResourceGroup="acl-insurance-resource-group"
+export DeploymentName="acl-insurance-deployment"
