@@ -45,7 +45,7 @@ parser.add_argument("--admin-cert", type=str, help="Path to ACL admin certificat
 parser.add_argument("--admin-key", type=str, help="Path to ACL admin private key.")
 parser.add_argument("--bundle", type=str, help="Path to app bundle.json")
 parser.add_argument(
-    "--valid-processor-policy", type=str, help="Base64 encoded processor policy."
+    "--valid-processor-policy", type=str, help="Hex encoded processor policy."
 )
 parser.add_argument("--acl-url", type=str, default="https://localhost:8000")
 parser.add_argument("--api-version", type=str, default="2024-08-22-preview")
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     print("Uploaded app as cose signed bundle.")
 
     # ---- Adding InsuranceAdmin role ----
-    print("Adding ACL roles")
+    print("Creating InsuranceAdmin role.")
     resp = admin_client.put(
         f"/app/roles?api-version={args.api_version}",
         json={
@@ -97,6 +97,7 @@ if __name__ == "__main__":
     resp = admin_client.get("/app/ccf-cert")
     assert resp.status_code == 200, (resp.status_code, resp.text)
     admin_fingerprint = resp.text
+    print(f"Adding {admin_fingerprint} as a InsuranceAdmin.")
 
     resp = admin_client.patch(
         f"/app/ledgerUsers/{admin_fingerprint}?api-version={args.api_version}",
@@ -106,6 +107,7 @@ if __name__ == "__main__":
     assert resp.status_code == 200, (resp.status_code, resp.text)
 
     # ---- Register valid policy ----
+    print(f"Setting valid policy as: {args.valid_processor_policy}.")
     policy_b64 = hex_to_base64(args.valid_processor_policy)
     resp = admin_client.put(
         "/app/processor/policy",
@@ -114,7 +116,6 @@ if __name__ == "__main__":
         },
         headers={"content-type": "application/json"},
     )
-    print(resp.status_code, resp.text)
     assert (
         resp.status_code == 200
     ), f"Failed to set processor policy: {resp.status_code} {resp.text} | {resp.request.text}"
@@ -133,6 +134,7 @@ if __name__ == "__main__":
     assert (
         resp.status_code == 200
     ), f"Failed to set client policy: {resp.status_code} {resp.text}"
+    print("Registered client's policy.")
 
     # ---- Case processing ----
     while True:
@@ -143,15 +145,16 @@ if __name__ == "__main__":
         resp = client_client.post("/app/cases", data=incident)
         assert resp.status_code == 200, (resp.status_code, resp.text)
         caseId = int(resp.text)
+        print("Registered client's case.")
 
         while True:
-            print("Requesting decision")
+            print("Requesting decision...")
             resp = client_client.get(f"/app/cases/indexed/{caseId}")
             assert resp.status_code == 200, (resp.status_code, resp.text)
 
             decision = resp.json()["metadata"]["decision"]["decision"]
             if decision != "":
-                print(f"======= DECISION : {decision} =======")
+                print(f"======= RECEIVED DECISION : {decision} =======")
                 break
 
             time.sleep(2)

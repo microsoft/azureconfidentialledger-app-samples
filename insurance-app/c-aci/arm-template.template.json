@@ -86,9 +86,9 @@
             "properties": {
               "image": "[parameters('primary-image')]",
               "command": [
-                "/bin/sh",
+                "/bin/bash",
                 "-c",
-                "echo $SSH_ADMIN_KEY >> /root/.ssh/authorized_keys && service ssh start && pip install --break-system-packages -r /src/requirements.txt && tail -f /dev/null"
+                "echo $SSH_ADMIN_KEY >> /root/.ssh/authorized_keys && service ssh start && cd /src && python3 -m venv .venv && source .venv/bin/activate && pip install -r /src/requirements.txt && tail -f /dev/null"
               ],
               "ports": [
                 {
@@ -110,9 +110,12 @@
               ],
               "resources": {
                 "requests": {
-                  "memoryInGB": 4,
-                  "cpu": 3.8
+                  "memoryInGB": 15,
+                  "cpu": 3.5
                 }
+              },
+	      "securityContext": {
+                "privileged": true
               }
             }
           },

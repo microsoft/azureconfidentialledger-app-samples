@@ -105,10 +105,10 @@ Production use should remove this and in the `arm-template.json` directly run th
 
 - In two terminal sessions, start the client and the server
   - C-ACI start processor
-    - `ssh -R 8000:localhost:8000 root@<container-ip> -- python3 /src/acl-processor.py --acl-url localhost:8000 --uds-sock /mnt/uds/sock --prime-phi`
+    - `ssh -R 8000:localhost:8000 root@<container-ip> -- python3 /src/acl-processor.py --acl-url <acl-url> --uds-sock /mnt/uds/sock --prime-phi`
   - ACL-APP process claim
     - In `<repository-root>/insurance-app/acl-app`
     - Ensure the python dependencies are installed `pip install -r scripts/requirements.txt`
       - You may have to source or set up a python venv
     - `python scripts/c-aci-test.py --bundle dist/bundle.json --admin-cert <admin-cert> --admin-key <admin-key> --valid-processor-policy <policy> --valid-processor-measurement <measurement> --acl-url <acl-url>`
-    - The policy is the last output line from the previous run of `az confcom acipolicygen`, but converted from hex to base64
+    - The policy is the last output line from the previous run of `az confcom acipolicygen` which should be in hex.
