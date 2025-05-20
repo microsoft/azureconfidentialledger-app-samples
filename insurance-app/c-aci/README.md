@@ -18,12 +18,12 @@ sequenceDiagram
   P ->> A: Register(attestation)
 
   loop
-  loop Check for available job
-  P <<->> A:
-  end
-  A ->>+ P: Job(incident, policy)
-  note over P: Use Phi 3 to<br>process job
-  P ->>-A: Decision
+    loop 
+      P <<->> A: Check for available job
+    end
+    A ->>+ P: Job(incident, policy)
+    note over P: Use Phi 3 to<br>process job
+    P ->>-A: Decision
   end
 ```
 
