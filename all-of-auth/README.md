@@ -49,7 +49,7 @@ Up on receiving a request, the app validates the certificate followed by the tok
     #
     apiVersion="2024-08-22-preview"
     content_type_application_json="Content-Type: application/json"
-    bundle="/home/settiy/azureconfidentialledger-app-samples/all-of-auth/dist/bundle.json"
+    bundle="/path/to/bundle.json"
     content_type_merge_patch_json="Content-Type: application/merge-patch+json"
     authorization="Authorization: Bearer <token>"
 
