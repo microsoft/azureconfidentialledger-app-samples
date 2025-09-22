@@ -4,7 +4,11 @@ import { ccf } from "@microsoft/ccf-app/global";
 const aclRolesPrefix = "public:confidentialledger.roles.";
 const aclRoleDefinitionsTablePrefix = aclRolesPrefix + "user_roles_definitions.";
 const userRolesMapTable = aclRolesPrefix + "user_roles_mapping";
-const expectedIssuer = "https://login.microsoftonline.com/<tenant id>/v2.0";
+
+// Expected claim values in the token
+const expectedIssuer = "https://login.microsoftonline.com/<tid>/v2.0";
+const expectedAudience = "<aud>";
+const expectedTenantId = "<tid>";
 
 const writeLogAction = "/logs/write";
 
@@ -107,20 +111,24 @@ function isValidUser(callerId: string): boolean {
 }
 
 /**
- * This method ensures that the token is issued by a trusted issuer.
+ * This method ensures that the token has the right aud, iss and tid claims.
  * @param jwt The JWT in the request.
  * @param expectedIssuer The trusted issuer.
- * @returns A boolean to indicate if the issuer is trusted.
+ * @param expectedAudience The audience.
+ * @param expectedTenantId The tenant id.
+ * @returns A boolean to indicate if the token has the right claims.
  */
-function checkIssuerInJwt(jwt: any, expectedIssuer: string): boolean {
+function checkJwtClaims(jwt: any, expectedIssuer: string, expectedAudience: string, expectedTenantId: string): boolean {
   if (!jwt || !jwt.iss) {
     return false;
   }
 
   var jwtAsJson = JSON.parse(JSON.stringify(jwt));
   console.log(`The jwt iss is ${jwtAsJson.iss}`);
+  console.log(`The jwt aud is ${jwtAsJson.aud}`);
+  console.log(`The jwt tid is ${jwtAsJson.tid}`);
   
-  return jwt.iss === expectedIssuer;
+  return jwt.iss === expectedIssuer && jwt.aud === expectedAudience && jwt.tid === expectedTenantId;
 }
 
 /**
@@ -209,8 +217,8 @@ export function writeLogMessage(request: ccfapp.Request): ccfapp.Response {
     };
   }
 
-  if (!checkIssuerInJwt(jwtToken, expectedIssuer)) {
-    console.log(`The JWT issuer is not trusted.`)
+  if (!checkJwtClaims(jwtToken, expectedIssuer, expectedAudience, expectedTenantId)) {
+    console.log(`Invalid token as one of the claims did not match the expected values.`)
     return {
       statusCode: 400,
     };

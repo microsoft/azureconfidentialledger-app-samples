@@ -37,10 +37,11 @@ Up on receiving a request, the app validates the certificate followed by the tok
     az login
     az account get-access-token --resource https://confidential-ledger.azure.com
 
-4. Replace the Tenant ID in the 'expectedIssuer' variable in the app code with an appropriate value. The app checks the 'iss' claim in the 
-token against this value.
-
-    expectedIssuer = "https://login.microsoftonline.com/<tenant id>/v2.0"
+4. Replace the 'iss', 'aud' and 'tid' values in the 'expectedIssuer', 'expectedAudience' and 'expectedTenant' variables respectively in the code. 
+   
+    const expectedIssuer = "https://login.microsoftonline.com/<tid>/v2.0"
+    const expectedAudience = "<aud>";
+    const expectedTenantId = "<tid>";
 
 5. Build and deploy the app.
 
