@@ -1,0 +1,29 @@
+{
+	"endpoints": {
+		"/logs/{key_op}": {
+			"put": {
+				"js_module": "endpoints/all-of.js",
+				"js_function": "writeLogMessage",
+				"forwarding_required": "always",
+				"authn_policies": [
+					{
+						"all_of": [
+							"any_cert",
+							"jwt"
+						]
+					}
+				],
+				"mode": "readwrite",
+				"openapi": {
+					"responses": {
+						"204": {
+							"description": "Ok"
+						}
+					},
+					"security": [],
+					"parameters": []
+				}
+			}
+		}
+	}
+}
