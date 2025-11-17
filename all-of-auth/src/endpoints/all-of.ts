@@ -13,7 +13,7 @@ const expectedTenantId = "<tid>";
 const writeLogAction = "/logs/write";
 
 /**
-  * Creates and returns a CCF KV where the logs are stored.
+  * Creates and returns a CCF KV Map wrapper for the map where the logs are stored.
   * Key is the key_op from the uri and the value is the log message.
 */
 function getLogsTable(): ccfapp.TypedKvMap<string, string> {
@@ -85,8 +85,7 @@ function getCallerIdAndJwt(request: ccfapp.Request<any>): [string, string] {
     console.error("JWT is required for authentication")
     throw "JWT is required for authentication"
   }
-
-  console.log(`The caller cert fingerprint is ${certFingerprintAsPem}`);
+  
   return [certFingerprintAsPem, jwt];
 }
 
