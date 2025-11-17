@@ -5,6 +5,55 @@ This sample demonstrates the capabilities of Programmable ACL to provide transpa
 The aim is to offload heavy CPU processing tasks to attested containers.
 Since these containers are attested, their processing of decisions can be trusted, even though they are not executed via ACL.
 
+## Prerequisites
+
+Before running this sample, ensure you have the following tools installed:
+
+### Required Software
+
+1. **Node.js** (version 16 or higher)
+   - Download from [nodejs.org](https://nodejs.org/)
+   - Verify: `node --version`
+
+2. **npm** (comes with Node.js)
+   - Verify: `npm --version`
+
+3. **Python 3**
+   - Download from [python.org](https://python.org/)
+   - Verify: `python --version` or `python3 --version`
+
+4. **pip** (Python package manager)
+   - Usually comes with Python
+   - Verify: `pip --version` or `pip3 --version`
+
+5. **Bash shell**
+   - Linux/macOS: Available by default
+   - Windows: Use Git Bash, WSL, or similar
+
+6. **Azure CLI**
+   - Install from [docs.microsoft.com/cli/azure/install-azure-cli](https://docs.microsoft.com/cli/azure/install-azure-cli)
+   - Login: `az login`
+   - Verify: `az --version`
+
+7. **Docker** (for C-ACI container)
+   - Download from [docker.com](https://docker.com/)
+   - Verify: `docker --version`
+
+8. **OpenSSL**
+   - Required for certificate generation
+   - Verify: `openssl version`
+
+### Azure Requirements
+
+- An active Azure subscription
+- Permissions to create:
+  - Azure Confidential Ledger instances
+  - Azure Container Registry (ACR)
+  - Azure Container Instances (ACI)
+  - Resource groups
+- Hugging Face token (for downloading the model)
+  - Get one at [huggingface.co](https://huggingface.co)
+
 ## Processes
 
 ```mermaid

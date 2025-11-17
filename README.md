@@ -12,6 +12,56 @@ In this repository, you will find a variety of sample applications that demonstr
 
 # Azure Confidential Ledger App Samples [![Open in VSCode](https://img.shields.io/static/v1?label=Open+in&message=VSCode&logo=visualstudiocode&color=007ACC&logoColor=007ACC&labelColor=2C2C32)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/azureconfidentialledger-app-samples)
 
+## Prerequisites
+
+To build and run these sample applications locally, you'll need the following tools installed:
+
+### Required Tools
+
+- **Node.js** (version 16 or higher)
+  - Download from [nodejs.org](https://nodejs.org/)
+  - Verify installation: `node --version`
+  
+- **npm** (comes with Node.js)
+  - Verify installation: `npm --version`
+
+- **Bash shell** (for running test scripts)
+  - **Linux/macOS**: Available by default
+  - **Windows**: Use Git Bash (comes with [Git for Windows](https://git-scm.com/download/win)), WSL (Windows Subsystem for Linux), or similar
+
+- **Make** (for running Makefiles)
+  - **Linux**: Usually pre-installed, or install via `apt-get install make` (Debian/Ubuntu) or `yum install make` (RHEL/CentOS)
+  - **macOS**: Install via Xcode Command Line Tools: `xcode-select --install`
+  - **Windows**: Install via [Chocolatey](https://chocolatey.org/): `choco install make`, or use WSL
+
+- **OpenSSL** (for certificate generation)
+  - **Linux**: Usually pre-installed, or install via `apt-get install openssl` (Debian/Ubuntu)
+  - **macOS**: Pre-installed
+  - **Windows**: Available via Git Bash, or install from [slproweb.com/products/Win32OpenSSL.html](https://slproweb.com/products/Win32OpenSSL.html)
+  - Verify installation: `openssl version`
+
+- **curl** (for API testing)
+  - **Linux**: Usually pre-installed, or install via `apt-get install curl` (Debian/Ubuntu)
+  - **macOS**: Pre-installed
+  - **Windows**: Available in Windows 10+ by default, or via Git Bash
+  - Verify installation: `curl --version`
+
+- **Azure CLI** (for deploying and managing Azure resources)
+  - Install from [docs.microsoft.com/cli/azure/install-azure-cli](https://docs.microsoft.com/cli/azure/install-azure-cli)
+  - Verify installation: `az --version`
+  - Login to Azure: `az login`
+
+### Optional but Recommended
+
+- **Git** (for cloning the repository)
+  - Download from [git-scm.com](https://git-scm.com/)
+
+### Azure Subscription Requirements
+
+- An active Azure subscription
+- Permissions to create and manage Azure Confidential Ledger instances
+- Permissions to create and manage resource groups
+
 ## Quickstart
 
 The quickest way to build and run sample applications is to checkout this repository locally in its development container by clicking:
