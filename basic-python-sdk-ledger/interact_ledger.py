@@ -170,16 +170,29 @@ def write_entry(client: ConfidentialLedgerClient):
     else:
         content = get_input("Entry content")
     
+    # Ask for tags (optional)
+    tags_input = get_input("Tags (comma-separated, optional, press Enter to skip)", "")
+    
     try:
         print("\nWriting entry to ledger...")
-        result = client.create_ledger_entry(
-            entry={"contents": content},
-            collection_id=collection_id
-        )
+        
+        # Prepare parameters
+        write_params = {
+            "entry": {"contents": content},
+            "collection_id": collection_id
+        }
+        
+        # Add tags if provided
+        if tags_input:
+            write_params["tags"] = tags_input
+        
+        result = client.create_ledger_entry(**write_params)
         
         print("\n✓ Entry written successfully!")
         print(f"  Transaction ID: {result['transactionId']}")
         print(f"  Collection ID: {collection_id}")
+        if tags_input:
+            print(f"  Tags: {tags_input}")
         
     except HttpResponseError as e:
         print(f"\n✗ Error writing entry: {e}")
@@ -264,6 +277,7 @@ def list_entries(client: ConfidentialLedgerClient):
     
     collection_id = get_input("Collection ID (press Enter for default)", "default")
     from_tx_id = get_input("Start from transaction ID (optional, press Enter to skip)", "")
+    filter_tag = get_input("Filter by tag (optional, press Enter to skip)", "")
     
     try:
         print("\nRetrieving entries...")
@@ -271,6 +285,8 @@ def list_entries(client: ConfidentialLedgerClient):
         kwargs = {"collection_id": collection_id}
         if from_tx_id:
             kwargs["from_transaction_id"] = from_tx_id
+        if filter_tag:
+            kwargs["tag"] = filter_tag
         
         entries = client.list_ledger_entries(**kwargs)
         
@@ -283,8 +299,11 @@ def list_entries(client: ConfidentialLedgerClient):
             count += 1
             tx_id = entry.get('transactionId', 'N/A')
             contents = entry.get('contents', '')
+            tags = entry.get('tags', '')
             
             print(f"\nTransaction ID: {tx_id}")
+            if tags:
+                print(f"Tags: {tags}")
             try:
                 parsed = json.loads(contents)
                 print(f"Content: {json.dumps(parsed, indent=2)}")

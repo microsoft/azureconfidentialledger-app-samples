@@ -57,9 +57,9 @@ The script displays the **Ledger URI** upon completion - save this for data oper
 Run `python interact_ledger.py` and enter your Ledger URL. The interactive menu provides:
 
 **Data Operations:**
-- Write entries (text or JSON) → Returns transaction ID
+- Write entries (text or JSON) with optional tags → Returns transaction ID
 - Read entries (latest or by transaction ID)
-- List entries with pagination
+- List entries with pagination and optional tag filtering
 
 **Transaction Operations:**
 - Get transaction receipts (cryptographic proof)
@@ -75,6 +75,9 @@ Run `python interact_ledger.py` and enter your Ledger URL. The interactive menu 
 ### Collections
 Logical groupings of entries (default: "default"). Each entry belongs to one collection.
 
+### Tags
+Comma-separated labels for grouping related entries (e.g., "alice,greeting"). Use tags to filter entries when listing.
+
 ### Transaction IDs
 Format: `{blockNumber}.{transactionNumber}` (e.g., `2.15`)
 Used to retrieve entries, get receipts, and check status.
@@ -87,7 +90,15 @@ Used to retrieve entries, get receipts, and check status.
 ## Common Operations
 
 **Write Entry:**
+Tags: payment,alice
+→ Transaction ID: 2.15
 ```
+
+**List Entries by Tag:**
+```
+Collection ID: default
+Filter by tag: alice
+→ Shows only entries tagged with "alice"
 Collection ID: default
 Entry content: {"transaction": "payment", "amount": 100}
 → Transaction ID: 2.15
