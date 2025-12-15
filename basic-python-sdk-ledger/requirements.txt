@@ -1,0 +1,11 @@
+# Azure Confidential Ledger Creation Script Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core Azure libraries
+azure-identity>=1.24.0
+azure-mgmt-confidentialledger>=2.0.0b5
+azure-core>=1.35.0
+
+# Data plane SDK (2024-12-09-preview API version)
+azure-confidentialledger==2.0.0b1
+azure-confidentialledger-certificate>=1.0.0b1
