@@ -4,13 +4,13 @@ set -euo pipefail
 apiVersion="2024-12-09-preview"
 ledgerId="banking-app-"$(echo $RANDOM | md5sum | head -c 8; echo)
 resourceGroup="$ledgerId-rg"
-location="EastUS"
+location="westeurope"
 aadPrincipalId=""
 tenantId=""
 subscriptionId=""
-ledgerType="public"
+ledgerType="Public"
 administrator="Administrator"
-tags="ACL banking application"
+tags="sample=acl app=banking"
 manager="manager"
 teller="teller"
 manager_cert="$manager"_cert.pem
@@ -118,8 +118,16 @@ az group create -n $resourceGroup -l $location
 # Deploy an ACL instance
 # The user that is logged into Azure will become an Administrator automatically.
 echo "Creating Azure Confidential Ledger instance $ledgerId . . ."
-certSecurityPrincipal=$(cat "$cert_dir/$manager_cert")
-az confidentialledger create -l $location --cert-based-security-principals cert="$certSecurityPrincipal" ledger-role-name="$administrator" --ledger-type "$ledgerType" --tags "$tags" -n "$ledgerId" -g "$resourceGroup"
+certSecurityPrincipal=$(awk 'NF { sub(/\r/, ""); printf "%s", $0 }' "$cert_dir/$manager_cert")
+certBasedSecurityPrincipals="[{cert:'${certSecurityPrincipal}',ledger-role-name:'${administrator}'}]"
+az confidentialledger create \
+    --resource-group "$resourceGroup" \
+    --ledger-name "$ledgerId" \
+    --ledger-type "$ledgerType" \
+    --ledger-sku Standard \
+    --location "$location" \
+    --cert-based-security-principals "$certBasedSecurityPrincipals" \
+    --tags $tags
 
 # Wait until the resource is deployed
 echo "💤 Waiting for the instance to be ready . . ."
@@ -169,7 +177,7 @@ ${testScript}
 echo "-- Cleaning up . . ."
 az confidentialledger delete -y -n $ledgerId -g $resourceGroup
 az group delete --yes -n $resourceGroup
-rmdir -r $cert_dir
+rm -r $cert_dir
 
 
 
