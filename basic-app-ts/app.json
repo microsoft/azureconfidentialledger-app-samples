@@ -5,7 +5,7 @@
         "js_module": "endpoints/app.js",
         "js_function": "echo_handler",
         "forwarding_required": "always",
-        "authn_policies": ["any_cert"],
+        "authn_policies": ["jwt"],
         "openapi": {
           "security": [],
           "parameters": [],
