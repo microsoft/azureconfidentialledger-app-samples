@@ -78,6 +78,7 @@ Please choose a sample to learn more.
 
 - [Banking App](./banking-app/README.md)
 - [Insurance App](./insurance-app/README.md)
+- [Code Transparency](./code-transparency/README.md)
 
 ## Contributing
 
