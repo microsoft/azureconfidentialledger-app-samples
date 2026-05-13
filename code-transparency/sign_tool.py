@@ -389,12 +389,7 @@ def cmd_submit(args):
             else:
                 print(f"  Policy:       FAILED - {policy.get('errors', [])}")
 
-            # Build portal deep link (only if portal URL is provided)
-            parts = scope_key.split("/", 1)
-            if args.portal_url and len(parts) == 2 and seqno != 'N/A':
-                portal_link = f"{args.portal_url.rstrip('/')}/explore/{parts[0]}/{parts[1]}/{seqno}"
-                print()
-                print(f"  View on portal: {portal_link}")
+            # Entry submitted successfully
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8")
         print(f"\n=== Submission Failed (HTTP {e.code}) ===")
@@ -504,8 +499,6 @@ def main():
                     help="Ledger URL (e.g., https://<name>.confidential-ledger.azure.com). Uses LEDGER_URL env var if not set.")
     sm.add_argument("--scope", required=True, help="Scope (owner/name, e.g., contoso/firmware)")
     sm.add_argument("--token", help="Bearer token (default: fetches via az cli)")
-    sm.add_argument("--portal-url", default=None,
-                    help="Optional web portal URL for deep links (e.g., https://your-portal.azurewebsites.net)")
 
     # policy
     pol = sub.add_parser("policy", help="View the policy for a scope on the ledger")
