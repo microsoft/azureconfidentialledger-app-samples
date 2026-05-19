@@ -1,0 +1,160 @@
+{
+  "endpoints": {
+    "/scopes": {
+      "get": {
+        "js_module": "endpoints/scope_mgmt.js",
+        "js_function": "listScopes",
+        "forwarding_required": "never",
+        "redirection_strategy": "none",
+        "authn_policies": ["no_auth"],
+        "mode": "readonly",
+        "openapi": {
+          "responses": {
+            "200": { "description": "List of all scopes" }
+          }
+        }
+      }
+    },
+    "/scopes/{owner}/{scope}": {
+      "post": {
+        "js_module": "endpoints/scope_mgmt.js",
+        "js_function": "createScope",
+        "forwarding_required": "always",
+        "redirection_strategy": "to_primary",
+        "authn_policies": ["jwt"],
+        "mode": "readwrite",
+        "openapi": {
+          "responses": {
+            "201": { "description": "Scope created" },
+            "400": { "description": "Invalid input" },
+            "409": { "description": "Scope already exists" }
+          }
+        }
+      },
+      "get": {
+        "js_module": "endpoints/scope_mgmt.js",
+        "js_function": "getScope",
+        "forwarding_required": "never",
+        "redirection_strategy": "none",
+        "authn_policies": ["no_auth"],
+        "mode": "readonly",
+        "openapi": {
+          "responses": {
+            "200": { "description": "Scope info" },
+            "404": { "description": "Scope not found" }
+          }
+        }
+      }
+    },
+    "/scopes/{owner}/{scope}/policy": {
+      "get": {
+        "js_module": "endpoints/scope_mgmt.js",
+        "js_function": "getPolicy",
+        "forwarding_required": "never",
+        "redirection_strategy": "none",
+        "authn_policies": ["no_auth"],
+        "mode": "readonly",
+        "openapi": {
+          "responses": {
+            "200": { "description": "Policy config" },
+            "404": { "description": "Scope not found" }
+          }
+        }
+      },
+      "patch": {
+        "js_module": "endpoints/scope_mgmt.js",
+        "js_function": "updatePolicy",
+        "forwarding_required": "always",
+        "redirection_strategy": "to_primary",
+        "authn_policies": ["jwt"],
+        "mode": "readwrite",
+        "openapi": {
+          "responses": {
+            "200": { "description": "Policy updated" },
+            "400": { "description": "Invalid input" },
+            "404": { "description": "Scope not found" }
+          }
+        }
+      }
+    },
+    "/scopes/{owner}/{scope}/verify": {
+      "get": {
+        "js_module": "endpoints/entries.js",
+        "js_function": "verifyFeed",
+        "forwarding_required": "never",
+        "redirection_strategy": "none",
+        "authn_policies": ["no_auth"],
+        "mode": "readonly",
+        "openapi": {
+          "responses": {
+            "200": { "description": "Latest entry for verification" },
+            "404": { "description": "Scope or feed not found" }
+          }
+        }
+      }
+    },
+    "/scopes/{owner}/{scope}/entries": {
+      "post": {
+        "js_module": "endpoints/entries.js",
+        "js_function": "submitEntry",
+        "forwarding_required": "always",
+        "redirection_strategy": "to_primary",
+        "authn_policies": ["user_cose_sign1", "jwt"],
+        "mode": "readwrite",
+        "openapi": {
+          "responses": {
+            "201": { "description": "Entry submitted" },
+            "400": { "description": "Invalid input" },
+            "403": { "description": "Policy check failed" },
+            "404": { "description": "Scope not found" }
+          }
+        }
+      },
+      "get": {
+        "js_module": "endpoints/entries.js",
+        "js_function": "listEntries",
+        "forwarding_required": "never",
+        "redirection_strategy": "none",
+        "authn_policies": ["no_auth"],
+        "mode": "readonly",
+        "openapi": {
+          "responses": {
+            "200": { "description": "Entry list" },
+            "404": { "description": "Scope not found" }
+          }
+        }
+      }
+    },
+    "/scopes/{owner}/{scope}/entries/{seqno}": {
+      "get": {
+        "js_module": "endpoints/entries.js",
+        "js_function": "getEntry",
+        "forwarding_required": "never",
+        "redirection_strategy": "none",
+        "authn_policies": ["no_auth"],
+        "mode": "readonly",
+        "openapi": {
+          "responses": {
+            "200": { "description": "Entry details" },
+            "404": { "description": "Entry not found" }
+          }
+        }
+      }
+    },
+    "/policies": {
+      "get": {
+        "js_module": "endpoints/policy_catalog.js",
+        "js_function": "listPolicies",
+        "forwarding_required": "never",
+        "redirection_strategy": "none",
+        "authn_policies": ["no_auth"],
+        "mode": "readonly",
+        "openapi": {
+          "responses": {
+            "200": { "description": "Policy catalog" }
+          }
+        }
+      }
+    }
+  }
+}

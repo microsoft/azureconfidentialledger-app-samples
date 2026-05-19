@@ -1,0 +1,25 @@
+{
+  "name": "code-transparency-sample",
+  "version": "1.0.0",
+  "description": "Code transparency sample using Azure Confidential Ledger User-Defined Endpoints (UDE)",
+  "type": "module",
+  "scripts": {
+    "build": "del-cli -f dist/ && rollup --config && node -e \"require('fs').copyFileSync('app.json','dist/app.json')\" && node build_bundle.js dist",
+    "clean": "del-cli -f dist/"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "@microsoft/ccf-app": "^5.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^17.1.0",
+    "@rollup/plugin-node-resolve": "^11.2.0",
+    "@rollup/plugin-typescript": "^8.2.0",
+    "del-cli": "^3.0.1",
+    "rollup": "^2.41.0",
+    "tslib": "^2.0.1",
+    "typescript": "^4.9.0"
+  }
+}
