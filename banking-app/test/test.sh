@@ -49,7 +49,7 @@ if [ -z "$ledger" ]; then
     failed "You must supply --ledger"
 fi
 if [ -z "$certificate_dir" ]; then
-    failed "You must supply --certificate_dir"
+    failed "You must supply --cert-dir"
 fi
 
 manager_cert_auth="--cert $certificate_dir/$manager_cert --key $certificate_dir/$manager_privk"

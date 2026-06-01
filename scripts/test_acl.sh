@@ -58,7 +58,6 @@ fi
 while [ $# -gt 0 ]
 do
     name="${1/--/}"
-    name="${name/-/_}"
     case "--$name"  in
         --subscription) subscriptionId="$2"; shift;;
         --tenant) tenantId="$2"; shift;;
@@ -131,7 +130,7 @@ az confidentialledger create \
     --ledger-sku Standard \
     --location "$location" \
     --cert-based-security-principals "$certBasedSecurityPrincipals" \
-    --aad-based-security-principals "[{principal-id:'$aadPrincipalId',tenant-id:'$tenantId',ledger-role-name:'$administrator'}]" \
+    --aad-based-security-principals "[{principal-id:'${aadPrincipalId}',tenant-id:'${tenantId}',ledger-role-name:'${administrator}'}]" \
     --tags $tags
 
 # Wait until the resource is deployed
@@ -170,19 +169,10 @@ if [ ! -f "$testScript" ]; then
     exit 1
 fi
 
-# build testScript command
-testScript="${testScript} --ledger https://${ledgerId}.confidential-ledger.azure.com --cert-dir ${cert_dir}"
-if [ $interactive -eq 1 ]; then
-    testScript="${testScript} --interactive"
-fi
-
 # call testScript command
-${testScript}
+bash "$app_dir/test/test.sh" --ledger "https://${ledgerId}.confidential-ledger.azure.com" --cert-dir "${cert_dir}" $( [ $interactive -eq 1 ] && echo "--interactive" )
 
 echo "-- Cleaning up . . ."
 az confidentialledger delete -y -n $ledgerId -g $resourceGroup
 az group delete --yes -n $resourceGroup
 rm -r $cert_dir
-
-
-
