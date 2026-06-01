@@ -33,11 +33,12 @@ function usage {
     echo ""
     echo "Test this sample."
     echo ""
-    echo "usage: ./test_acl.sh --subscription <subscriptionId> --tenant <tenantId> --app-dir <application dir> [--interactive]"
+    echo "usage: ./test_acl.sh --subscription <subscriptionId> --tenant <tenantId> --app-dir <application dir> --entra-object-id <entra ObjectId> [--interactive]"
     echo ""
     echo "  --subscription    string   The subscription id where the ledger resource will be deployed"
     echo "  --tenant          string   The tenant id"
     echo "  --app-dir         string   The application directory"
+    echo "  --entra-object-id string   The Entra Object ID of a user that will be added as an Administrator to the ACL instance"
     echo "  --interactive     boolean  Optional. Run in Demo mode"
     echo ""
     exit 0
@@ -49,7 +50,7 @@ function failed {
 }
 
 # parse parameters
-if [ $# -gt 7 ]; then
+if [ $# -gt 9 ]; then
     usage
     exit 1
 fi
@@ -61,7 +62,8 @@ do
     case "--$name"  in
         --subscription) subscriptionId="$2"; shift;;
         --tenant) tenantId="$2"; shift;;
-        --app_dir) app_dir="$2"; shift;;
+        --app-dir) app_dir="$2"; shift;;
+        --entra-object-id) aadPrincipalId="$2"; shift;;
         --interactive) interactive=1;;
         --help) usage; exit 0;;
         --) shift;;
@@ -76,7 +78,9 @@ fi
 if [ -z "$tenantId" ]; then
     failed "You must supply --tenant"
 fi
-
+if [ -z "$aadPrincipalId" ]; then
+    failed "You must supply --entra-object-id"
+fi
 check_eq() {
     local expected="$1"
     local actual="$2"
@@ -127,6 +131,7 @@ az confidentialledger create \
     --ledger-sku Standard \
     --location "$location" \
     --cert-based-security-principals "$certBasedSecurityPrincipals" \
+    --aad-based-security-principals "[{principal-id:'$aadPrincipalId',tenant-id:'$tenantId',ledger-role-name:'$administrator'}]" \
     --tags $tags
 
 # Wait until the resource is deployed
