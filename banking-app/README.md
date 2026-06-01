@@ -157,18 +157,20 @@ The banking application includes a comprehensive test suite that deploys to a re
    az login
    ```
 
-2. **Update the Makefile** with your Azure subscription and tenant information:
+2. **Update the Makefile** with your Azure subscription,  tenant information and the object ID of an Entra user that will be added as an Administrator in the ledger:
    
    Edit the `Makefile` and replace the placeholders in the test target:
    ```makefile
    test: build
-       @. ../scripts/test_acl.sh --subscription "<your-subscription-id>" --tenant "<your-tenant-id>" --app-dir ${CURDIR}
+       @. ../scripts/test_acl.sh --subscription "<your-subscription-id>" --tenant "<your-tenant-id>" --app-dir ${CURDIR} --entra-object-id "<your-entra-object-id>"
    ```
 
    To find your subscription and tenant IDs:
    ```bash
    az account show --query "{subscriptionId:id, tenantId:tenantId}" -o table
    ```
+
+   To find your Entra Object ID, login to the Azure Portal and enter your name in the search box in the top navigation.
 
 ### Running the Tests
 
