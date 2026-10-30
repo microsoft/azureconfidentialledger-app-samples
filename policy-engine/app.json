@@ -1,0 +1,88 @@
+{
+  "endpoints": {
+    "/policy/{policy_name}/{policy_version}/create": {
+      "put": {
+        "js_module": "endpoints/policy.js",
+        "js_function": "upsertPolicy",
+        "forwarding_required": "always",
+        "authn_policies": ["jwt"],
+        "mode": "readwrite",
+        "openapi": {
+          "responses": {
+            "204": {
+              "description": "Ok"
+            }
+          },
+          "security": [],
+          "parameters": [],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "rule": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/policy/{policy_name}/{policy_version}/evaluate": {
+      "post": {
+        "js_module": "endpoints/policy.js",
+        "js_function": "evaluatePolicy",
+        "forwarding_required": "always",
+        "authn_policies": ["jwt"],
+        "mode": "readwrite",
+        "openapi": {
+          "responses": {
+            "204": {
+              "description": "Ok"
+            }
+          },
+          "security": [],
+          "parameters": [],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "input": {
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/policy/{policy_name}/{policy_version}": {
+      "get": {
+        "js_module": "endpoints/policy.js",
+        "js_function": "getPolicy",
+        "forwarding_required": "always",
+        "authn_policies": ["jwt"],
+        "mode": "readonly",
+        "openapi": {
+          "responses": {
+            "200": {
+              "description": "Ok"
+            }
+          },
+          "security": [],
+          "parameters": []
+        }
+      }
+    }
+  }
+}
