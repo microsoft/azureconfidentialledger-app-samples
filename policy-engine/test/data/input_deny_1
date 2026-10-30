@@ -1,0 +1,8 @@
+{
+  "input": {
+    "operation": "transfer",
+    "document": {
+      "status": "pending"
+    }
+  }
+}

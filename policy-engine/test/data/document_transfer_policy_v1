@@ -1,0 +1,24 @@
+{
+  "rule": {
+    "if": [
+      {
+        "and": [
+          {
+            "==": [
+              { "var": "operation" },
+              "transfer"
+            ]
+          },
+          {
+            "==": [
+              { "var": "document.status" },
+              "approved"
+            ]
+          }
+        ]
+      },
+      "Allow",
+      "Deny"
+    ]
+  }
+}
